@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkMailSender.Blazor", "BulkMailSender.Blazor\BulkMailSender.Blazor.csproj", "{32BE71DE-4E20-4F8C-A079-2528F7EC249F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkMailSender.Domain", "BulkMailSender.Domain\BulkMailSender.Domain.csproj", "{3D919021-77A9-43F9-AFE8-BE97F94172D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkMailSender.Application", "BulkMailSender.Application\BulkMailSender.Application.csproj", "{B2950260-73DE-4056-992B-60CE9641A267}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkMailSender.Infrastructure", "BulkMailSender.Infrastructure\BulkMailSender.Infrastructure.csproj", "{CE3E76D2-FFBE-4705-A594-7FFABE5EAF6E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D30FB254-AF8C-456E-9CC5-D53163F0DF68}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE.md = LICENSE.md
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{32BE71DE-4E20-4F8C-A079-2528F7EC249F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32BE71DE-4E20-4F8C-A079-2528F7EC249F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32BE71DE-4E20-4F8C-A079-2528F7EC249F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32BE71DE-4E20-4F8C-A079-2528F7EC249F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D919021-77A9-43F9-AFE8-BE97F94172D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D919021-77A9-43F9-AFE8-BE97F94172D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D919021-77A9-43F9-AFE8-BE97F94172D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D919021-77A9-43F9-AFE8-BE97F94172D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2950260-73DE-4056-992B-60CE9641A267}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2950260-73DE-4056-992B-60CE9641A267}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2950260-73DE-4056-992B-60CE9641A267}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2950260-73DE-4056-992B-60CE9641A267}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE3E76D2-FFBE-4705-A594-7FFABE5EAF6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE3E76D2-FFBE-4705-A594-7FFABE5EAF6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE3E76D2-FFBE-4705-A594-7FFABE5EAF6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE3E76D2-FFBE-4705-A594-7FFABE5EAF6E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
