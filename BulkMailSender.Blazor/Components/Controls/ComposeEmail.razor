@@ -1,0 +1,741 @@
+﻿@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using BulkMailSender.Application.Dtos
+
+@inject IJSRuntime JS
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+@inject IReadFileAsBytesUseCase ReadFileAsBytesUseCase
+@inject IExcelReaderUseCase ExcelReaderUseCase
+@* @inject IReadFileAsBytesUseCase ReadFileAsBytesUseCase
+@inject IStoreEmailsUseCase SaveEmailsToDBUseCase
+@inject IGetRequesterByNameUseCase GetRequesterByNameUseCase
+@inject ISendEmailUseCase SendEmailUseCase
+@inject IFindOrAddAttachmentUseCase FindOrAddAttachmentUseCase
+@inject IFindOrAddInlineResourceUseCase FindOrAddInlineResourceUseCase
+@inject ISaveEmailUseCase SaveEmailUseCase
+@inject IEmailProcessor EmailProcessor
+@inject IUpdateEmailStatusUseCase UpdateEmailStatusUseCase
+@inject IOptionsSnapshot<EmailSendingSettings> EmailSettings *@
+@inject IServiceProvider ServiceProvider
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+
+<div class="container-fluid mt-1  no-spacing">
+    <div class="row">
+        <div class="col-12  ">
+            <!-- Card for subject input -->
+            <div class="card shadow-lg">
+                <div class="card-header">
+                    <h4 class="card-title">Compose Email</h4>
+                </div>
+                @if (!string.IsNullOrEmpty(StatusMessage.Message))
+                {
+                    <div class="alert mt-3 @(StatusMessage.IsError ? "alert-danger" : "alert-success")">
+                        <strong>@(StatusMessage.IsError ? "Error:" : "Success:")</strong> @StatusMessage.Message
+                    </div>
+                }
+                <div class="card-body">
+                    <!-- Single EditForm to handle email subject and attachment -->
+                    <EditForm EditContext="@editContext" OnValidSubmit="ConfirmSendAllEmail">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="alert alert-danger" />
+
+                        <!-- Form Groups -->
+                        <div class="form-group">
+                            <div class="form-group">
+                                <label for="emailFrom" class="form-label">Email From</label>
+                                <InputText id="emailFrom"
+                                           @bind-Value="emailViewModel.EmailFrom"
+                                           class="form-control"
+                                           readonly="@isEmailFromReadOnly"
+                                           placeholder="Enter your email if not pre-filled" />
+                                <ValidationMessage For="@(() => emailViewModel.EmailFrom)" />
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <!-- Bootstrap styled input file -->
+                                <label for="fileInput" class="form-label">Choose Email Address Excel File</label>
+                                <InputFile OnChange="HandleEmailExcelFileUpload" class="form-control" />
+                            </div>
+
+                            <!-- Display uploaded file data -->
+                            @if (excelDtos != null && excelDtos.Count > 0)
+                            {
+                                <div class="card mt-4 shadow-sm">
+                                    <div class="card-header">
+                                        <h8 class="card-body">
+                                            Uploaded Addresses: <strong>@excelDtos.Count</strong>
+                                        </h8>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Display email count -->
+                                        <div style="height: 20vh; overflow-y: auto; border: 1px solid #ccc;">
+                                            <table class="table table-striped table-hover table-bordered w-100">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Last Name</th>
+                                                        <th>First Name</th>
+                                                        <th>Email Address</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var email in excelDtos)
+                                                    {
+                                                        <tr>
+                                                            <td>@email.LastName</td>
+                                                            <td>@email.FirstName</td>
+                                                            <td>@email.EmailAddress</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div> <!-- Closing the div for the main form-group -->
+                        <!-- File upload for attachment -->
+                        <div class="form-group">
+                            <label for="attachments" class="form-label">Attachments (max: 5)</label>
+                            <InputFile OnChange="HandleFileSelection" multiple class="form-control" />
+                            @if (emailViewModel.Attachments != null && emailViewModel.Attachments.Count > 0)
+                            {
+                                <ul class="list-group mt-3">
+                                    @foreach (var file in emailViewModel.Attachments)
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            @file.FileName
+                                            <button class="btn btn-sm btn-danger" type="button" @onclick="() => RemoveAttachment(file as AttachmentViewModel)">
+                                                Remove
+                                            </button>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            @if (emailViewModel.Attachments?.Count > 5)
+                            {
+                                <span class="text-danger">You can only attach up to 5 files.</span>
+                            }
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="emailSubject" class="form-label">Email Subject</label>
+                            <InputText id="emailSubject" @bind-Value="emailViewModel.Subject" class="form-control" placeholder="Enter the email subject" />
+                            <ValidationMessage For="@(() => emailViewModel.Subject)" />
+                        </div>
+
+                        <!-- Quill HTML Editor for the email body -->
+                        <div class="form-group mt-4">
+                            <label for="editor" class="form-label">Email Body</label>
+                            <div id="editor">
+                                <div>
+                                    @if (!string.IsNullOrEmpty(Body.Value))
+                                    {
+                                        <div id="editor-content" hidden>@(Body)</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Test Recipient Email and Send Button -->
+                        <!-- Test Recipient Email Section -->
+                        <div class="border p-3 mt-4 rounded bg-light">
+                            <h5 class="text-secondary">Send Test Email</h5>
+                            <p class="text-muted">Use this section to send a test email before sending to all recipients.</p>
+                            <div class="row">
+                                <div class="col-md-6 ">
+                                    <label for="testRecipientEmail" class="form-label">Test Recipient Email</label>
+                                    <InputText id="testRecipientEmail" @bind-Value="testRecipientEmail" class="form-control" placeholder="Enter a test recipient email" />
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button type="button" class="btn btn-secondary w-100" @onclick="SendTestEmail">Send Test Email to Recipient</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Validation for emailVMs -->
+                        @if (showEmailVMsCountError)
+                        {
+                            <div class="text-danger">
+                                <span>You must add at least one email to send.</span>
+                            </div>
+                        }
+                        <ValidationSummary class="alert alert-danger" />
+                        <!-- Submit button -->
+                        <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary w-100 mt-4">Send Email to All Recipients</button>
+                        </div>
+
+                    </EditForm> <!-- Closing the EditForm -->
+                </div> <!-- Closing card-body -->
+            </div> <!-- Closing card -->
+        </div> <!-- Closing col-12 -->
+    </div> <!-- Closing row -->
+    <!-- Confirmation Modal -->
+    <ConfirmDialog Show="showConfirmDialog"
+                   Message="@confirmationMessage"
+                   ConfirmationResult="HandleConfirmationResult" />
+</div> <!-- Closing container-fluid -->
+@code
+{
+    [Parameter]
+    public string EmailFrom { get; set; } = string.Empty;
+
+    [Parameter]
+    public string HostName { get; set; }
+
+    [Parameter]
+    public MarkupString Body { get; set; }
+    private bool isEmailFromReadOnly;
+    private bool showConfirmDialog = false;
+    private bool showEmailVMsCountError = false;
+    private string confirmationMessage = string.Empty;
+    private List<ExcelImportDto> excelDtos = new();
+    public string? testRecipientEmail { get; set; }
+
+    private string currentUserId;
+    private Guid? _requesterID;
+    private Guid _jobId = Guid.NewGuid();
+
+    [EmailAddress(ErrorMessage = "Excel file doen't find any emai addresses.")]
+    private List<EmailViewModel> emailVMs = new();
+    private EmailViewModel emailViewModel = new EmailViewModel();
+    private DotNetObjectReference<ComposeEmail> dotNetObjectReference; // Declared as a field
+    private EditContext editContext;
+    // private Requester _requester;
+     private StatusMessage StatusMessage = new StatusMessage();
+    // private EmailSendingSettings settings;
+
+    protected override async Task OnInitializedAsync()
+    {    // Fetch the current user's ID from the authentication state
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        // Retrieve the settings from IOptionsSnapshot
+        // settings = EmailSettings.Value;
+        if (user.Identity?.IsAuthenticated ?? false)
+        {
+            //     currentUserId = user.FindFirst("user_id")?.Value; // or "user_id" based on your identity provider's claim type
+            currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value; // or "user_id" based on your identity provider's claim type
+        }
+        // Clear emails and set up edit context
+        // emails.Clear();
+        if (string.IsNullOrWhiteSpace(EmailFrom))
+        {
+            // If EmailFrom is empty, make the field editable
+            isEmailFromReadOnly = false;
+        } else
+        {
+            // If EmailFrom is set, initialize emailViewModel.EmailFrom and make the field read-only
+            emailViewModel.EmailFrom = EmailFrom;
+            isEmailFromReadOnly = true;
+        }
+        // emailViewModel.EmailBody = Body;
+        editContext = new EditContext(emailViewModel);
+
+
+        // Fetch the requester ID based on HostName
+        // _requester = await GetRequesterByNameUseCase.ExecuteAsync(HostName);
+        // if (_requester != null)
+        // {
+        //     _requesterID = _requester.Id;
+        // }
+    }
+
+    //  JS.InvokeVoidAsync("disposeQuill");
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Always initialize Quill on render
+        if (firstRender)
+        {
+            dotNetObjectReference = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initializeQuill", dotNetObjectReference);
+
+        }
+    }
+    private async Task RemoveAttachment(AttachmentViewModel file)
+    {
+        // Remove the attachment from the list
+        emailViewModel.Attachments.Remove(file);
+    }
+
+    private void ConfirmSendAllEmail()
+    {        // Custom validation logic
+        if (emailVMs.Count == 0)
+        {
+            showEmailVMsCountError = true;
+            return;
+        }
+        showEmailVMsCountError = false;
+        int emailCount = emailVMs.Count; // Assuming emailVMs holds your emails
+        confirmationMessage = emailCount > 0
+            ? $"Are you sure you want to send out {emailCount} emails?"
+            : "There are no email address on excel file.?";
+        showConfirmDialog = true;
+    }
+    private async Task HandleConfirmationResult(bool confirmed)
+    {
+        showConfirmDialog = false;
+
+        if (confirmed)
+        {
+            await SendEmails(isTestEmail: false, new CancellationToken());
+
+
+
+            //putsh to signalr hub
+            if (StatusMessage.IsError is false && _jobId != Guid.Empty)
+            {
+                NavigationManager.NavigateTo($"/emailstatus?jobId={_jobId}");
+            }
+        } else
+        {
+            StatusMessage.Message = "Email sending canceled by user.";
+            StatusMessage.IsError = false;
+        }
+    }
+    [JSInvokable("UpdateEmailBody")]
+    public void UpdateEmailBody(string bodyContent)
+    {
+        Console.WriteLine("UpdateEmailBody triggered.");
+        //Console.WriteLine(bodyContent);
+        emailViewModel.Body = bodyContent;
+    }
+
+    [JSInvokable("UploadImage")]
+    public async Task<string> UploadImage(string base64Image)
+    {
+        Console.WriteLine("UploadImage triggered.");
+        var imageId = Guid.NewGuid();
+        // Decode the base64 string to a byte array
+        var imageContent = Convert.FromBase64String(base64Image);
+
+        // Determine the MIME type based on the image content
+        var mimeType = GetMimeTypeFromImageContent(imageContent) ?? "image/png"; // Default to PNG if not recognized
+
+        var embeddedImage = new InlineResourceViewModel
+            {
+                Id = imageId,
+                Content = imageContent,
+                FileName = $"embedded-{imageId}.png",
+                MimeType = mimeType
+            };
+
+        emailViewModel.InlineResources.Add(embeddedImage);
+
+        return imageId.ToString();
+    }
+    public async Task HandleEmailExcelFileUpload(InputFileChangeEventArgs e)
+    {
+        StatusMessage.Message = string.Empty;
+        StatusMessage.IsError = false;
+        try
+        {
+            var file = e.File;
+            using var fileStream = file.OpenReadStream(12428800); // 50 MB
+            var fileBytes = new byte[fileStream.Length]; /*NEED TO MODIFY THIS LINE*/
+            var content=await ReadFileAsBytesUseCase.ExcuteAsync(fileStream);
+            excelDtos = ExcelReaderUseCase.ExecuteAsync(content);
+
+        }
+        catch (InvalidDataException ex)
+        {
+            // Handle the specific case when the file is too large
+            StatusMessage.Message = "The file exceeds the maximum allowed size of 10 MB.";
+            StatusMessage.IsError = true;
+
+        }
+        catch (Exception ex)
+        {
+            // Handle other exceptions
+            StatusMessage.Message = $"An error occurred while uploading the file: {ex.Message}";
+            StatusMessage.IsError = true;
+
+        }
+        showEmailVMsCountError = emailVMs.Count == 0;
+    }
+
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        const int maxAttachments = 5;
+        StatusMessage.Message = string.Empty;
+        StatusMessage.IsError = false;
+        //var file = e.File;
+        // Check for valid file types
+        var allowedFileTypes = new List<string> { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".gif" };
+
+        if (emailViewModel.Attachments.Count >= maxAttachments)
+        {
+            StatusMessage.Message = "You have reached the maximum of 5 attachments.";
+            StatusMessage.IsError = true;
+            return;
+        }
+        try
+        {
+
+
+            var remainingSlots = maxAttachments - emailViewModel.Attachments.Count;
+            var uploadFiles = e.GetMultipleFiles(remainingSlots);
+
+            foreach (var file in e.GetMultipleFiles(remainingSlots))
+            {
+                try
+                {
+                    var fileExtension = Path.GetExtension(file.Name).ToLower();
+                    if (!allowedFileTypes.Contains(fileExtension))
+                    {
+                        StatusMessage.Message = "Invalid file type. Only PDF, Word, and image files are allowed.";
+                        StatusMessage.IsError = true;
+                        // file = null;
+                        return;
+                    }
+                    using var stream = file.OpenReadStream(10485760); // 10 MB
+                                                                      // Read the file into a byte array
+                    var fileContent = new byte[stream.Length];
+                    //await    ReadFileAsBytesUseCase.ExecuteReadFileAsBytesAsync(stream);
+
+                    // Create a new AttachmentViewModel and add it to the list of attachments
+                    var attachment = new AttachmentViewModel
+                        {
+                            //Id = Guid.NewGuid(), // Generate a unique ID for the attachment
+                            FileName = file.Name,
+                            Content = fileContent
+                        };
+                    // if (!emailViewModel.Attachments.Add(attachment))
+                    // {
+                    //     StatusMessage.Message = $"Duplicate file detected: {attachment.Name}";
+                    //     StatusMessage.IsError = true;
+                    //     continue; // Skip duplicate files
+                    // };
+                     // Add to attachments list
+                }
+                catch (InvalidDataException ex)
+                {
+                    // Handle the specific case when the file is too large
+                    StatusMessage.Message = "The file exceeds the maximum allowed size of 10 MB.";
+                    StatusMessage.IsError = true;
+                    //     emailViewModel.Attachment = null;
+                    // file = null;
+                }
+                catch (Exception ex)
+                {
+                    // Handle other exceptions
+                    StatusMessage.Message = $"An error occurred while uploading the file: {ex.Message}";
+                    StatusMessage.IsError = true;
+                    //      emailViewModel.Attachment = null;
+                    //file = null;
+                }
+                finally
+                {
+                    //  StateHasChanged();
+                    // Update the UI with the new status message
+                }
+            }
+
+            if (StatusMessage.IsError == false)
+            {
+                StatusMessage.Message = "File uploaded successfully.";
+            } else
+            {
+                uploadFiles = null;
+                // StatusMessage.Message = $"An error occurred while uploading the file: {ex.Message}";
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            StatusMessage.Message = "The file exceeds the maximum allowed size of 10 MB.";
+            StatusMessage.IsError = true;
+        }
+        catch (Exception ex)
+        {
+            // Handle any unexpected exceptions from GetMultipleFiles or other logic
+            StatusMessage.Message = $"An error occurred while processing the files: {ex.Message}";
+            StatusMessage.IsError = true;
+            // e = e.FileCount;
+            StateHasChanged();
+        }
+    }
+     
+    private async Task SendTestEmail()
+    {    // Manually trigger validation before proceeding
+        var isValid = editContext.Validate(); // This validates the form fields
+
+        if (!isValid)
+        {
+            // If validation fails, don't proceed further
+            return;
+        }
+        if ( string.IsNullOrWhiteSpace(testRecipientEmail))
+        {
+            StatusMessage.Message = "Test email address is required.";
+            StatusMessage.IsError = true;
+            StateHasChanged();
+            return;
+        }
+        await SendEmails(isTestEmail: true, new CancellationToken());
+    }
+
+
+    private async Task SendEmails(bool isTestEmail, CancellationToken stoppingToken)
+    {
+        // Initialize variables
+        // var semaphore = new SemaphoreSlim(settings.MaxDegreeOfParallelism > 0 ? settings.MaxDegreeOfParallelism : 1);
+        // var failedEmails = new ConcurrentBag<string>();
+        // int emailsSent = 0;
+
+        // _jobId = Guid.NewGuid();
+        // emails.Clear();
+
+        // // Sync Quill content
+        // if (dotNetObjectReference != null)
+        //     await JS.InvokeVoidAsync("syncQuillContent", dotNetObjectReference);
+
+        // // Prepare emails
+        // if (isTestEmail)
+        // {
+        //     StatusMessage.Message = "Start to send a Test email.";
+        //     StatusMessage.IsError = false; 
+        //     StateHasChanged();
+        //     emails.Add(await CreateTestEmailAsync());
+        // } else
+        // {
+        //     StatusMessage.Message = "Start to send bulk emails.";
+        //     StatusMessage.IsError = false;
+        //     await PrepareCampaignEmailsAsync();
+        // }
+        // var emailTasks = emails.Select(async email =>
+        // {
+        //     await semaphore.WaitAsync(stoppingToken);
+        //     try
+        //     {
+        //         await EmailProcessor.ProcessEmailAsync(email);
+        //         emailsSent++;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         failedEmails.Add(email.EmailTo);
+        //         await UpdateEmailStatusUseCase.ExecuteAsync(email.Id, $"Error: {ex.Message}");
+        //     }
+        //     finally
+        //     {
+        //         if (settings.BatchProcessingDelayInSeconds > 0)
+        //         {
+        //             await Task.Delay(settings.BatchProcessingDelayInSeconds * 1000);
+        //         }
+        //         semaphore.Release();
+        //     }
+        // }).ToList();
+        // if (isTestEmail)
+        // {
+        //     StatusMessage.Message = "Test email successfully sent.";
+        //     StatusMessage.IsError = false;
+        // } else
+        // {
+        //     NavigationManager.NavigateTo($"/emailstatus?jobId={_jobId}&total={emails.Count}");
+        // }
+        // await Task.WhenAll(emailTasks);
+    }
+
+
+    // private async Task <Email> CreateTestEmailAsync()
+    // {
+    //     var emailBody = ReplaceEmbeddedImagesWithCid(emailViewModel.EmailBody, emailViewModel.InlineResources);
+
+    //     var existingAttachments = await Task.WhenAll(emailViewModel.Attachments.Select(
+    // async attachment =>
+    // await FindOrAddAttachmentUseCase.ExecuteAsync(new Attachment
+    //     {
+    //         Id = attachment.Id,
+    //         Name = attachment.Name,
+    //         AttachedContent = attachment.AttachedContent
+    //     })
+    // ));
+
+    //     var inlineResourceIdsInBody = ExtractInlineResourceIds(emailBody);
+    //     var filteredInlineResources = emailViewModel.InlineResources
+    //         .Where(ir => inlineResourceIdsInBody.Contains(ir.Id.ToString()))
+    //         .ToList();
+    //     // Process Inline Resources
+    //     var existingInlineResources = await Task.WhenAll(filteredInlineResources.Select(
+    //         async inlineResource =>
+    //         await FindOrAddInlineResourceUseCase.ExecuteAsync(new InlineResource
+    //             {
+    //                 Id = inlineResource.Id,
+    //                 Content = inlineResource.Content,
+    //                 FileName = inlineResource.FileName,
+    //                 MimeType = inlineResource.MimeType
+    //             })
+    //     ));
+    //     return new Email
+    //         {
+    //             EmailFrom = emailViewModel.EmailFrom,
+    //             EmailTo = testRecipientEmail,
+    //             Subject = emailViewModel.EmailSubject,
+    //             Body = emailBody.Replace("{name}", "Test Recipient"),
+    //             IsBodyHTML = true,
+    //             StatusID = 0,
+    //             RequestedDate = DateTime.UtcNow,
+    //             //JobID = _jobId,
+    //             RequesterID = _requesterID.Value,
+    //             BuilderID = Guid.TryParse(currentUserId, out var builderGuid) ? builderGuid : (Guid?)null,
+    //             // Attachments = GetAttachments(emailViewModel.Attachments),
+    //             // InlineResources = emailViewModel.InlineResources.Select(img => new InlineResource
+    //             // {
+    //             //     Id = img.Id,
+    //             //     Content = img.Content,
+    //             //     FileName = img.FileName,
+    //             //     MimeType = img.MimeType
+    //             // }).ToList()
+    //                                 Attachments = existingAttachments.ToList(),
+    //                 InlineResources = existingInlineResources.ToList()
+    //         };
+
+    // }
+
+    // private async Task PrepareCampaignEmailsAsync()
+    // {
+    //     var existingAttachments = await Task.WhenAll(emailViewModel.Attachments.Select(
+    //         async attachment =>
+    //         await FindOrAddAttachmentUseCase.ExecuteAsync(new Attachment
+    //             {
+    //                 Id = attachment.Id,
+    //                 Name = attachment.Name,
+    //                 AttachedContent = attachment.AttachedContent
+    //             })
+    //     ));
+    //     // Process Inline Resources
+    //     var existingInlineResources = await Task.WhenAll(emailViewModel.InlineResources.Select(
+    //         async inlineResource =>
+    //         await FindOrAddInlineResourceUseCase.ExecuteAsync(new InlineResource
+    //             {
+    //                 Id = inlineResource.Id,
+    //                 Content = inlineResource.Content,
+    //                 FileName = inlineResource.FileName,
+    //                 MimeType = inlineResource.MimeType
+    //             })
+    //     ));
+    //     foreach (var campaign in emailVMs)
+    //     {                  // Create a copy of the EmailBody and replace embedded images
+    //         var emailBody = ReplaceEmbeddedImagesWithCid(emailViewModel.EmailBody, emailViewModel.InlineResources);
+    //         // Replace placeholder text (e.g., {name}) with actual data
+    //         emailBody = emailBody.Replace("{name}", campaign.Name);
+
+    //         emails.Add(new Email
+    //             {
+    //                 EmailFrom = emailViewModel.EmailFrom,
+    //                 EmailTo = campaign.EmailTo,
+    //                 Subject = emailViewModel.EmailSubject,
+    //                 Body = emailBody,
+    //                 IsBodyHTML = true,
+    //                 StatusID = 0,
+    //                 RequestedDate = DateTime.UtcNow,
+    //                 JobID = _jobId,
+    //                 RequesterID = _requesterID.Value,
+    //                 BuilderID = Guid.TryParse(currentUserId, out var builderGuid) ? builderGuid : (Guid?)null,
+    //                 Attachments = existingAttachments.ToList(),
+    //                 InlineResources = existingInlineResources.ToList()
+    //             });
+    //     }
+    // }
+
+    // private async Task ProcessEmailAsync(Email email)
+    // {
+    //     var savedEmail = await SaveEmailUseCase.ExecuteAsync(email);
+    //     var (isSuccess, errorMessage) = await SendEmailUseCase.ExecuteAsync(email);
+    //     if (isSuccess)
+    //         await UpdateEmailStatusUseCase.ExecuteAsync(savedEmail.Id, string.Empty);
+    //     else
+    //         await UpdateEmailStatusUseCase.ExecuteAsync(savedEmail.Id, errorMessage);
+    // }
+
+    // private List<Attachment> GetAttachments(IEnumerable<AttachmentViewModel> attachmentViewModels)
+    // {
+    //     return attachmentViewModels.Select(a => new Attachment
+    //         {
+    //             Id = a.Id,
+    //             Name = a.Name,
+    //             AttachedContent = a.AttachedContent
+    //         }).ToList();
+    // }
+
+    private void UpdateStatusMessage(int successCount, int failCount)
+    {
+        if (failCount == 0)
+        {
+            StatusMessage.Message = $"All {successCount} emails were sent successfully.";
+            StatusMessage.IsError = false;
+        } else
+        {
+            StatusMessage.Message = $"{successCount} emails sent successfully, {failCount} emails failed.";
+            StatusMessage.IsError = true;
+        }
+    }
+    private string ReplaceEmbeddedImagesWithCid(string emailBody, List<InlineResourceViewModel> embeddedImages)
+    {
+        foreach (var embeddedImage in embeddedImages)
+        {
+            var base64String = $"data:image/png;base64,{Convert.ToBase64String(embeddedImage.Content)}";
+            var cidReference = $"cid:{embeddedImage.Id}";
+
+            if (emailBody.Contains(base64String))
+            {
+                emailBody = emailBody.Replace(base64String, cidReference);
+            } else
+            {
+                Console.WriteLine($"Warning: Base64 image not found in email body for image ID: {embeddedImage.Id}");
+            }
+        }
+        return emailBody;
+    }
+    private string? GetMimeTypeFromImageContent(byte[] imageContent)
+    {
+        if (imageContent == null || imageContent.Length < 4)
+            return null;
+
+        // Check for JPEG (FF D8 FF E0 or FF D8 FF E1)
+        if (imageContent[0] == 0xFF && imageContent[1] == 0xD8)
+            return "image/jpeg";
+
+        // Check for PNG (89 50 4E 47)
+        if (imageContent[0] == 0x89 && imageContent[1] == 0x50 &&
+            imageContent[2] == 0x4E && imageContent[3] == 0x47)
+            return "image/png";
+
+        // Check for GIF (47 49 46 38)
+        if (imageContent[0] == 0x47 && imageContent[1] == 0x49 &&
+            imageContent[2] == 0x46 && (imageContent[3] == 0x38))
+            return "image/gif";
+
+        // Check for BMP (42 4D)
+        if (imageContent[0] == 0x42 && imageContent[1] == 0x4D)
+            return "image/bmp";
+
+        // Default MIME type for unknown file type
+        return null;
+    }
+    private List<string> ExtractInlineResourceIds(string emailBody)
+    {
+        var inlineResourceIds = new List<string>();
+        // Use a regex to match all `cid:` URIs in the email body
+        var matches = Regex.Matches(emailBody, @"cid:(?<id>[\w\-]+)");
+        foreach (Match match in matches)
+        {
+            if (match.Groups["id"].Success)
+            {
+                inlineResourceIds.Add(match.Groups["id"].Value);
+            }
+        }
+        return inlineResourceIds;
+    }
+    public void Dispose()
+    {
+       // emails.Clear();
+        emailVMs.Clear();
+        JS.InvokeVoidAsync("disposeQuill");
+        // Fully clean up the Quill editor instance when the component is disposed
+        dotNetObjectReference?.Dispose();
+        dotNetObjectReference = null;
+    }
+
+
+}

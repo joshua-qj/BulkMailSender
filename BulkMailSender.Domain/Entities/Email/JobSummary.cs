@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BulkMailSender.Domain.Entities.Email
-{
+﻿namespace BulkMailSender.Domain.Entities.Email {
     public class JobSummary
     {
-        public Guid? JobId { get; set; }
+        public Guid? BatchId { get; set; }
         public Guid EmailId { get; set; }
         public DateTime Date { get; set; }
         public string EmailFrom { get; set; }

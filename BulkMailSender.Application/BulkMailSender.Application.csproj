@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+    <Folder Include="UseCases\Email\EmailJobSummaryScreen\" />
+    <Folder Include="UseCases\Email\ViewEmailScreen\" />
+    <Folder Include="UseCases\Identity\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BulkMailSender.Domain\BulkMailSender.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

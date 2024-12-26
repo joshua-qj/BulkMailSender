@@ -1,0 +1,20 @@
+﻿@page "/custom"
+@rendermode InteractiveServer
+@* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
+
+<h3>Custom email</h3>
+<ComposeEmail HostName="joshua.qj@hotmail.com"
+              Body=@(new MarkupString(@"
+              <p>Dear {name},</p>
+              <p>&nbsp;</p>
+    <p>Hi.</p>
+              <p>Hi.</p> 
+              <p>Hi.</p>
+              <p>&nbsp;</p>
+              <p>Regards</p>
+              <p>Citizen Jane</p>
+              ")) />
+
+@code {
+
+}

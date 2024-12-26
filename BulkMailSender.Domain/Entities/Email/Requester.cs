@@ -3,13 +3,14 @@
     public class Requester
     {
         public Guid Id { get; set; }
-        public string LoginName { get; set; }
-        public Guid HostId { get; set; }
+        public string LoginName { get; set; } = null!;
+        public string Password { get; set; } = null!;
+        public Guid MailServerId { get; set; }
         // Navigation property to the associated Host entity
-        public Host Host { get; set; }
-        public bool HasValidHost()
+        public MailServer Server { get; set; } = null!;
+        public bool HasValidServer()
         {
-            return Host != null && !string.IsNullOrWhiteSpace(Host.HostName) && Host.PortNumber !=0;
+            return Server != null && !string.IsNullOrWhiteSpace(Server.ServerName) && Server.Port !=0;
         }
     }
 }

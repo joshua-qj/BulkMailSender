@@ -5,15 +5,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["BulkMailSender.Blazor.styles.css"]" />
-    <ImportMap />
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <link rel="icon" type="image/png" href="favicon.ico" />
+
+
+    <link rel="stylesheet" href="quill/quill.snow.css" />
+    <script src="quill/quill.js"></script>
+    <script src="quill/quillInit.js"></script>
+@*     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    *@ 
+
+    <HeadOutlet @rendermode="RenderModeForPage" />
+@*     <HeadOutlet @rendermode="InteractiveServer" /> *@
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
+    @*     <Routes @rendermode="InteractiveServer" /> *@
+    <Routes @rendermode="RenderModeForPage" />
+    <script src="bootstrap/js/bootstrap.js"></script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // Render interactively, except for account pages (which need server-side rendering for cookies/authentication)
+    private IComponentRenderMode? RenderModeForPage => HttpContext.Request.Path.StartsWithSegments("/Account")
+        ? null
+        : InteractiveServer;
+}

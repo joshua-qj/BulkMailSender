@@ -18,7 +18,7 @@ namespace BulkMailSender.Domain.Services
             if (requester == null)
                 throw new ArgumentException("Requester is required.");
 
-            if (!requester.HasValidHost())
+            if (!requester.HasValidServer())
                 throw new InvalidOperationException("Requester must belong to a valid host.");
 
             Email email= new Email

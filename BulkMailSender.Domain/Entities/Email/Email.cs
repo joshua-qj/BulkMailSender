@@ -7,7 +7,7 @@ namespace BulkMailSender.Domain.Entities.Email
     {
         public Guid Id { get; set; }
         public EmailAddress EmailFrom { get; set; }
-        public string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
         public EmailAddress EmailTo { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }
@@ -31,10 +31,10 @@ namespace BulkMailSender.Domain.Entities.Email
     !string.IsNullOrWhiteSpace(Subject) &&
     !string.IsNullOrWhiteSpace(Body) &&
     Requester is not null &&
-    Requester.HasValidHost();
+    Requester.HasValidServer();
         public void SetRequester(Requester requester)
         {
-            if (requester == null || !requester.HasValidHost())
+            if (requester == null || !requester.HasValidServer())
                 throw new InvalidOperationException("Invalid requester or host.");
 
             Requester = requester;
@@ -52,11 +52,23 @@ namespace BulkMailSender.Domain.Entities.Email
                 throw new InvalidOperationException("Duplicate inline resource detected.");
             InlineResources.Add(resource);
         }
-        public void MarkAsDelivered() => StatusId = (int)Status.Delivered; 
-        public void MarkAsUndelivered(string errorMessage)
+      //  public void MarkAsDelivered() => StatusId = (int)Status.Delivered; 
+      //public void MarkAsUndelivered(string? errorMessage)
+      //  {
+      //      StatusId = string.IsNullOrEmpty(errorMessage) ? (int)Status.Delivered : (int)Status.Undelivered;
+      //      ErrorMessage = errorMessage;
+      //  }
+        public void UpdateDeliveryStatus(string? errorMessage)
         {
-            StatusId = (int)Status.Undelivered;
-            ErrorMessage = errorMessage;
+            if (string.IsNullOrEmpty(errorMessage))
+            {
+                StatusId = (int)Status.Delivered;
+                ErrorMessage = null;
+            } else
+            {
+                StatusId = (int)Status.Undelivered;
+                ErrorMessage = errorMessage;
+            }
         }
     }
 }

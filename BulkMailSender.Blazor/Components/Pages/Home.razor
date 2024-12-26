@@ -1,7 +1,66 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Welcome to Bulk Mail Sender</PageTitle>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Welcome Section -->
+            <div class="text-center">
+                <h1 class="display-4">Welcome to the Bulk Mail Sender</h1>
+                <p class="lead text-muted">Effortlessly manage and send personalized bulk emails to your audience.</p>
+            </div>
 
-<h1>Hello, world!</h1>
+            <hr />
 
-Welcome to your new app.
+            <!-- User Greeting -->
+@*             <AuthorizeView>
+                <div class="alert alert-success text-center" role="alert">
+                    Hello, <strong>@context.User.Identity?.Name!</strong>
+                </div>
+            </AuthorizeView> *@
+
+            <!-- Call-to-Action Section (Visible Only to Anonymous Users) -->
+            <AuthorizeView>
+                <NotAuthorized>
+                    <div class="text-center mt-4">
+                        <p>
+                            <span class="fw-bold">New here?</span>
+                            <a href="Account/Register" class="btn btn-outline-primary btn-sm ms-2">
+                                Register Your Account
+                            </a>
+                        </p>
+                        <p>
+                            <span class="fw-bold">Already a member?</span>
+                            <a href="Account/login" class="btn btn-outline-secondary btn-sm ms-2">
+                                Log In
+                            </a>
+                        </p>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+            <!-- Instructions Section -->
+            <div class="mt-5">
+                <h3>How It Works</h3>
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <strong>Step 1:</strong> Register your account or log in to get started.
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Step 2:</strong> Upload your recipient list in supported formats (Excel, CSV).
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Step 3:</strong> Craft your email content with embedded images and attachments.
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Step 4:</strong> Test  your email or send your emails to recipient list.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Footer Section -->
+            <footer class="text-center mt-5">
+                <p class="text-muted">&copy; 2024 Bulk Email Sender. All rights reserved.</p>
+            </footer>
+        </div>
+    </div>
+</div>
