@@ -34,7 +34,7 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen {
                 {
                     Port = requester.Server.Port,
                     Credentials = new NetworkCredential(requester.LoginName, requester.Password),
-                    EnableSsl = requester.Server.EnableSsl
+                    EnableSsl = requester.Server.IsSecure
                 };
 
                 // Set up the email message

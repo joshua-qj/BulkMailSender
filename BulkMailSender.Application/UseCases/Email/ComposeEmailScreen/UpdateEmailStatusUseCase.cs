@@ -1,5 +1,6 @@
 ﻿using BulkMailSender.Application.UseCases.Email.ComposeEmailScreen.interfaces;
 using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Dtos;
 
 namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen
 {
@@ -12,9 +13,9 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen
             _emailRepository = emailRepository;
         }
 
-        public async Task ExecuteAsync(Guid emailId, string? errorMessage)
+        public async Task ExecuteAsync(EmailDto emailDtoSave, string? errorMessage)
         {
-            await _emailRepository.UpdateEmailStatusAsync(emailId, errorMessage);
+            await _emailRepository.UpdateEmailStatusAsync(emailDtoSave, errorMessage);
         }
     }
 }

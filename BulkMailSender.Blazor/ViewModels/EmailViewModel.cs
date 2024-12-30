@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BulkMailSender.Application.Dtos;
+using System.ComponentModel.DataAnnotations;
 
 namespace BulkMailSender.Blazor.ViewModels {
     public class EmailViewModel {
@@ -16,14 +17,17 @@ namespace BulkMailSender.Blazor.ViewModels {
 
         [Required(ErrorMessage = "Email Body is required")]
         [MinLength(1, ErrorMessage = "Email Body must be at least 1 characters long viewmodel")]
-        public string Body { get; set; } = null!; //"<p>Dear {name},</p> <p>Enter your email content here...</p>";
-
-        //        public Guid RequesterID { get; set; }
-        //public Requester Requester { get; set; }
+        public string Body { get; set; } = null!; 
+        public bool IsBodyHtml { get; set; }
+        public Guid RequesterID { get; set; }
+        public DateTime RequestedDate { get; set; }
+        public RequesterViewModel Requester { get; set; } //maybe this should be removed
 
         // Email Address in lowercase as specified in the query
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string TestRecipientEmail { get; set; }
+        public Guid? BatchID { get; set; }
+        public Guid UserId { get; set; }
         // List of attachments
         public List<AttachmentViewModel> Attachments { get; set; } = new List<AttachmentViewModel>();
 

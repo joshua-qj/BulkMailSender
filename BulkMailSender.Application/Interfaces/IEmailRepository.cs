@@ -1,9 +1,9 @@
-﻿using BulkMailSender.Domain.Entities.Email;
+﻿using BulkMailSender.Application.Dtos;
+using BulkMailSender.Domain.Entities.Email;
 
 namespace BulkMailSender.Application.Interfaces {
     public interface IEmailRepository {
         Task<Email> SaveEmailAsync(Email email);
-        Task UpdateEmailStatusAsync(Guid emailId, string? errorMessage);
         Task<Requester> GetRequesterByIdAsync(Guid requesterId);
         Task LoadRequesterConfigurationsAsync();
         Task<Requester> GetRequesterByNameAsync(string hostName);
@@ -12,6 +12,7 @@ namespace BulkMailSender.Application.Interfaces {
         Task<InlineResource> FindOrAddInlineResourceAsync(InlineResource inlineResource);
         IQueryable<JobSummary> GetGroupedEmails(Guid userId);
         Task<byte[]> ReadFileAsBytesUseCaseAsync(Stream fileStream);
+        Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage);
     }
 }
 /*Repositories are focused on persisting and retrieving domain models.

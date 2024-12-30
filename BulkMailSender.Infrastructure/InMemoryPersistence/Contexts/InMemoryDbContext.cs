@@ -1,13 +1,7 @@
-﻿using BulkMailSender.Infrastructure.Common.Models.Email;
+﻿using BulkMailSender.Infrastructure.Common.Entities.Email;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace BulkMailSender.Infrastructure.InMemoryPersistence.Contexts
-{
+namespace BulkMailSender.Infrastructure.InMemoryPersistence.Contexts {
     public class InMemoryDbContext : DbContext {
         public InMemoryDbContext(DbContextOptions<InMemoryDbContext> options)
             : base(options) {
@@ -122,6 +116,36 @@ namespace BulkMailSender.Infrastructure.InMemoryPersistence.Contexts
             modelBuilder.Entity<EmailEntity>()
                 .Property(e => e.ErrorMessage)
                 .HasMaxLength(1000);
+
+            // Seeding MailServer
+            modelBuilder.Entity<MailServerEntity>().HasData(
+                new MailServerEntity {
+                    Id = Guid.Parse("a7dc4d29-69fa-4d8f-92aa-df9b3076aad1"),
+                    ServerName = "smtp-relay.brevo.com",
+                    Port = 587,
+                    IsSecure = true
+                }
+            );
+
+            // Seeding Status
+            modelBuilder.Entity<StatusEntity>().HasData(
+                new StatusEntity { Id = 1, Name = "Ready" },
+                new StatusEntity { Id = 2, Name = "Delivered" },
+                new StatusEntity { Id = 3, Name = "Undelivered" },
+                new StatusEntity { Id = 4, Name = "Retrying" },
+                new StatusEntity { Id = 6, Name = "Canceled" },
+                new StatusEntity { Id = 7, Name = "InvalidRecipient" }
+            );
+
+            // Seeding Requester
+            modelBuilder.Entity<RequesterEntity>().HasData(
+                new RequesterEntity {
+                    Id = Guid.Parse("a6e9e69e-3af3-43c3-a6e9-775f751f3659"),
+                    LoginName = "joshua.qj@hotmail.com",
+                    Password = "YCNDXj6t7LfMc1yW",
+                    MailServerId = Guid.Parse("a7dc4d29-69fa-4d8f-92aa-df9b3076aad1")
+                }
+            );
         }
 
         public static InMemoryDbContext CreateInMemoryDbContext() {

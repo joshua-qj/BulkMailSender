@@ -2,6 +2,6 @@
 
 namespace BulkMailSender.Application.Interfaces {
     public interface IExcelFileProcessingService {
-        List<ExcelImportDto> Execute(byte[] bytes);
+        List<ExcelImportDto> Execute(Stream fileStream);
     }
 }

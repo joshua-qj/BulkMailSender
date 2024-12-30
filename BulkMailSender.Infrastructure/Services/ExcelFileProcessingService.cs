@@ -4,8 +4,7 @@ using ClosedXML.Excel;
 
 namespace BulkMailSender.Infrastructure.Services {
     public class ExcelFileProcessingService : IExcelFileProcessingService {
-        public List<ExcelImportDto> Execute(byte[] bytes) {
-            using var fileStream = new MemoryStream(bytes);
+        public List<ExcelImportDto> Execute(Stream fileStream) {
             if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
 
             var importedData = new List<ExcelImportDto>();

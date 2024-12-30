@@ -9,12 +9,8 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
         public ExcelReaderUseCase(IExcelFileProcessingService excelFileProcessing) {
             _excelFileProcessing = excelFileProcessing;
         }
-        public List<ExcelImportDto> ExecuteAsync(byte[] bytes) {
-            return _excelFileProcessing.Execute(bytes);
-        }
-
         public List<ExcelImportDto> ExecuteAsync(Stream fileStream) {
-            throw new NotImplementedException();
+            return _excelFileProcessing.Execute(fileStream);
         }
     }
 }

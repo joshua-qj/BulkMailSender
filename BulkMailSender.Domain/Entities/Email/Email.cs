@@ -11,7 +11,7 @@ namespace BulkMailSender.Domain.Entities.Email
         public EmailAddress EmailTo { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }
-        public bool? IsBodyHTML { get; set; }
+        public bool IsBodyHTML { get; set; }
         public Guid RequesterID { get; set; }
         public Requester Requester { get; set; }
         public DateTime RequestedDate { get; set; }

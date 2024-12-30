@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace BulkMailSender.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateEmailTable : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,7 +27,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "InlineResources",
+                name: "InlineResource",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -35,7 +37,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_InlineResources", x => x.Id);
+                    table.PrimaryKey("PK_InlineResource", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -45,7 +47,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ServerName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     Port = table.Column<int>(type: "int", nullable: false),
-                    EnableSsl = table.Column<bool>(type: "bit", nullable: true)
+                    IsSecure = table.Column<bool>(type: "bit", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -53,7 +55,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Statuses",
+                name: "Status",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -62,7 +64,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Statuses", x => x.Id);
+                    table.PrimaryKey("PK_Status", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -113,9 +115,9 @@ namespace BulkMailSender.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Email_Statuses_StatusId",
+                        name: "FK_Email_Status_StatusId",
                         column: x => x.StatusId,
-                        principalTable: "Statuses",
+                        principalTable: "Status",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -161,12 +163,35 @@ namespace BulkMailSender.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_EmailInlineResource_InlineResources_InlineResourceId",
+                        name: "FK_EmailInlineResource_InlineResource_InlineResourceId",
                         column: x => x.InlineResourceId,
-                        principalTable: "InlineResources",
+                        principalTable: "InlineResource",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "MailServer",
+                columns: new[] { "Id", "IsSecure", "Port", "ServerName" },
+                values: new object[] { new Guid("a7dc4d29-69fa-4d8f-92aa-df9b3076aad1"), true, 587, "smtp-relay.brevo.com" });
+
+            migrationBuilder.InsertData(
+                table: "Status",
+                columns: new[] { "Id", "Name" },
+                values: new object[,]
+                {
+                    { 1, "Ready" },
+                    { 2, "Delivered" },
+                    { 3, "Undelivered" },
+                    { 4, "Retrying" },
+                    { 6, "Canceled" },
+                    { 7, "InvalidRecipient" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Requester",
+                columns: new[] { "Id", "LoginName", "MailServerId", "Password" },
+                values: new object[] { new Guid("a6e9e69e-3af3-43c3-a6e9-775f751f3659"), "joshua.qj@hotmail.com", new Guid("a7dc4d29-69fa-4d8f-92aa-df9b3076aad1"), "YCNDXj6t7LfMc1yW" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Email_RequesterId",
@@ -210,13 +235,13 @@ namespace BulkMailSender.Infrastructure.Migrations
                 name: "Email");
 
             migrationBuilder.DropTable(
-                name: "InlineResources");
+                name: "InlineResource");
 
             migrationBuilder.DropTable(
                 name: "Requester");
 
             migrationBuilder.DropTable(
-                name: "Statuses");
+                name: "Status");
 
             migrationBuilder.DropTable(
                 name: "MailServer");

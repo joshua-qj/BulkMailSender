@@ -1,13 +1,15 @@
 ﻿@using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
-@using BulkMailSender.Application.Dtos
+@using BulkMailSender.Blazor.Services
+
 
 @inject IJSRuntime JS
 @implements IDisposable
 @inject NavigationManager NavigationManager
-
-@inject IReadFileAsBytesUseCase ReadFileAsBytesUseCase
+@inject IMapper Mapper
 @inject IExcelReaderUseCase ExcelReaderUseCase
+@inject IGetRequesterByNameUseCase GetRequesterByNameUseCase
+@inject ISendEmailsUseCase SendEmailsUseCase
 @* @inject IReadFileAsBytesUseCase ReadFileAsBytesUseCase
 @inject IStoreEmailsUseCase SaveEmailsToDBUseCase
 @inject IGetRequesterByNameUseCase GetRequesterByNameUseCase
@@ -46,10 +48,10 @@
                             <div class="form-group">
                                 <label for="emailFrom" class="form-label">Email From</label>
                                 <InputText id="emailFrom"
-                                           @bind-Value="emailViewModel.EmailFrom"
-                                           class="form-control"
-                                           readonly="@isEmailFromReadOnly"
-                                           placeholder="Enter your email if not pre-filled" />
+                                @bind-Value="emailViewModel.EmailFrom"
+                                class="form-control"
+                                readonly="@isEmailFromReadOnly"
+                                placeholder="Enter your email if not pre-filled" />
                                 <ValidationMessage For="@(() => emailViewModel.EmailFrom)" />
                             </div>
 
@@ -154,8 +156,8 @@
                             </div>
                         </div>
 
-                        <!-- Custom Validation for emailVMs -->
-                        @if (showEmailVMsCountError)
+                        <!-- Custom Validation for emailDtos -->
+                        @if (showemailDtosCountError)
                         {
                             <div class="text-danger">
                                 <span>You must add at least one email to send.</span>
@@ -174,8 +176,8 @@
     </div> <!-- Closing row -->
     <!-- Confirmation Modal -->
     <ConfirmDialog Show="showConfirmDialog"
-                   Message="@confirmationMessage"
-                   ConfirmationResult="HandleConfirmationResult" />
+    Message="@confirmationMessage"
+    ConfirmationResult="HandleConfirmationResult" />
 </div> <!-- Closing container-fluid -->
 @code
 {
@@ -183,28 +185,28 @@
     public string EmailFrom { get; set; } = string.Empty;
 
     [Parameter]
-    public string HostName { get; set; }
+    public string RequesterLoginName { get; set; }
 
     [Parameter]
     public MarkupString Body { get; set; }
     private bool isEmailFromReadOnly;
     private bool showConfirmDialog = false;
-    private bool showEmailVMsCountError = false;
+    private bool showemailDtosCountError = false;
     private string confirmationMessage = string.Empty;
     private List<ExcelImportDto> excelDtos = new();
     public string? testRecipientEmail { get; set; }
 
     private string currentUserId;
-    private Guid? _requesterID;
-    private Guid _jobId = Guid.NewGuid();
+    private Guid _requesterID;
+    private Guid _batchId;
 
     [EmailAddress(ErrorMessage = "Excel file doen't find any emai addresses.")]
-    private List<EmailViewModel> emailVMs = new();
-    private EmailViewModel emailViewModel = new EmailViewModel();
+    private List<EmailDto> emailDtos = new();
+    private EmailViewModel emailViewModel = new();
     private DotNetObjectReference<ComposeEmail> dotNetObjectReference; // Declared as a field
     private EditContext editContext;
-    // private Requester _requester;
-     private StatusMessage StatusMessage = new StatusMessage();
+    private RequesterViewModel _requester;
+    private StatusMessage StatusMessage = new StatusMessage();
     // private EmailSendingSettings settings;
 
     protected override async Task OnInitializedAsync()
@@ -219,7 +221,7 @@
             currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value; // or "user_id" based on your identity provider's claim type
         }
         // Clear emails and set up edit context
-        // emails.Clear();
+        emailDtos.Clear();
         if (string.IsNullOrWhiteSpace(EmailFrom))
         {
             // If EmailFrom is empty, make the field editable
@@ -233,13 +235,12 @@
         // emailViewModel.EmailBody = Body;
         editContext = new EditContext(emailViewModel);
 
-
-        // Fetch the requester ID based on HostName
-        // _requester = await GetRequesterByNameUseCase.ExecuteAsync(HostName);
-        // if (_requester != null)
-        // {
-        //     _requesterID = _requester.Id;
-        // }
+        var requesterDto = await GetRequesterByNameUseCase.ExecuteAsync(RequesterLoginName);
+        _requester = Mapper.Map<RequesterViewModel>(requesterDto);
+        if (_requester != null)
+        {
+            _requesterID = _requester.Id;
+        }
     }
 
     //  JS.InvokeVoidAsync("disposeQuill");
@@ -259,15 +260,17 @@
         emailViewModel.Attachments.Remove(file);
     }
 
-    private void ConfirmSendAllEmail()
-    {        // Custom validation logic
-        if (emailVMs.Count == 0)
+    private async Task ConfirmSendAllEmail()
+    {        
+        await PrepareEmailsFromExcelAsync();
+        // Custom validation logic
+    if (emailDtos.Count == 0)
         {
-            showEmailVMsCountError = true;
+            showemailDtosCountError = true;
             return;
         }
-        showEmailVMsCountError = false;
-        int emailCount = emailVMs.Count; // Assuming emailVMs holds your emails
+        showemailDtosCountError = false;
+        int emailCount = emailDtos.Count; // Assuming emailDtos holds your emails
         confirmationMessage = emailCount > 0
             ? $"Are you sure you want to send out {emailCount} emails?"
             : "There are no email address on excel file.?";
@@ -276,23 +279,33 @@
     private async Task HandleConfirmationResult(bool confirmed)
     {
         showConfirmDialog = false;
-
         if (confirmed)
         {
-            await SendEmails(isTestEmail: false, new CancellationToken());
-
-
-
-            //putsh to signalr hub
-            if (StatusMessage.IsError is false && _jobId != Guid.Empty)
+          // await PrepareEmailsFromExcelAsync();
+            var emailChunks = ChunkService.ChunkList(emailDtos, 2);
+            foreach (var chunk in emailChunks)
             {
-                NavigationManager.NavigateTo($"/emailstatus?jobId={_jobId}");
+                await SendEmailsUseCase.ExecuteAsync(chunk/* , cancellationToken */);
             }
-        } else
+        }
+        else
         {
             StatusMessage.Message = "Email sending canceled by user.";
             StatusMessage.IsError = false;
         }
+        // if (confirmed)
+        // {
+        //     await SendEmails(isTestEmail: false, new CancellationToken());
+        //     //putsh to signalr hub
+        //     if (StatusMessage.IsError is false && _batchId != Guid.Empty)
+        //     {
+        //         NavigationManager.NavigateTo($"/emailstatus?jobId={_batchId}");
+        //     }
+        // } else
+        // {
+        //     StatusMessage.Message = "Email sending canceled by user.";
+        //     StatusMessage.IsError = false;
+        // }
     }
     [JSInvokable("UpdateEmailBody")]
     public void UpdateEmailBody(string bodyContent)
@@ -331,11 +344,16 @@
         StatusMessage.IsError = false;
         try
         {
-            var file = e.File;
-            using var fileStream = file.OpenReadStream(12428800); // 50 MB
-            var fileBytes = new byte[fileStream.Length]; /*NEED TO MODIFY THIS LINE*/
-            var content=await ReadFileAsBytesUseCase.ExcuteAsync(fileStream);
-            excelDtos = ExcelReaderUseCase.ExecuteAsync(content);
+            var file = e.File; 
+            if (file.Size > 20 * 1024 * 1024) // 20 MB
+            {
+                throw new InvalidDataException("The file exceeds the maximum allowed size of 20 MB.");
+            }
+            using var browserFileStream = file.OpenReadStream(20 * 1024 * 1024); // 20 MB
+            using var memoryStream = new MemoryStream();
+            await browserFileStream.CopyToAsync(memoryStream);
+
+            excelDtos = ExcelReaderUseCase.ExecuteAsync(memoryStream);
 
         }
         catch (InvalidDataException ex)
@@ -352,7 +370,7 @@
             StatusMessage.IsError = true;
 
         }
-        showEmailVMsCountError = emailVMs.Count == 0;
+        showemailDtosCountError = emailDtos.Count == 0;
     }
 
     private async Task HandleFileSelection(InputFileChangeEventArgs e)
@@ -527,7 +545,6 @@
         // }).ToList();
         // if (isTestEmail)
         // {
-        //     StatusMessage.Message = "Test email successfully sent.";
         //     StatusMessage.IsError = false;
         // } else
         // {
@@ -591,6 +608,42 @@
     //         };
 
     // }
+    private async Task PrepareEmailsFromExcelAsync()
+    {
+        if (excelDtos == null || !excelDtos.Any())
+        {
+            // Show an error message if Excel data is empty
+            return;
+        }
+        _batchId = Guid.NewGuid();
+        emailDtos = excelDtos.Select(excelDto => new EmailDto
+            {
+                EmailFrom = emailViewModel.EmailFrom, 
+                DisplayName = excelDto.FirstName + " " + excelDto.LastName,
+                EmailTo = excelDto.EmailAddress,
+                Subject = emailViewModel.Subject,
+                Body = emailViewModel.Body,
+                IsBodyHtml = true,
+                RequesterID = _requesterID,
+                RequestedDate = DateTime.UtcNow,
+                StatusId = 1, // Pending
+                BatchID = _batchId,
+
+                //UserId = CurrentUserId, // Assuming you have the user's ID
+                // Attachments = dto.Attachments.Select(a => new AttachmentDto
+                // {
+                //     FileName = a.FileName,
+                //     FileContent = a.FileContent
+                // }).ToList()
+                /*        InlineResources = viewModel.InlineResources.Select(r => new InlineResourceDto
+        {
+            ContentId = r.ContentId,
+            FileName = r.FileName,
+            FileContent = r.FileContent
+        }).ToList()*/
+            }).ToList();
+
+    }
 
     // private async Task PrepareCampaignEmailsAsync()
     // {
@@ -614,7 +667,7 @@
     //                 MimeType = inlineResource.MimeType
     //             })
     //     ));
-    //     foreach (var campaign in emailVMs)
+    //     foreach (var campaign in emailDtos)
     //     {                  // Create a copy of the EmailBody and replace embedded images
     //         var emailBody = ReplaceEmbeddedImagesWithCid(emailViewModel.EmailBody, emailViewModel.InlineResources);
     //         // Replace placeholder text (e.g., {name}) with actual data
@@ -730,7 +783,7 @@
     public void Dispose()
     {
        // emails.Clear();
-        emailVMs.Clear();
+        emailDtos.Clear();
         JS.InvokeVoidAsync("disposeQuill");
         // Fully clean up the Quill editor instance when the component is disposed
         dotNetObjectReference?.Dispose();

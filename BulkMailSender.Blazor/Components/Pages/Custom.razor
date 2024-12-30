@@ -3,7 +3,7 @@
 @* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
 
 <h3>Custom email</h3>
-<ComposeEmail HostName="joshua.qj@hotmail.com"
+<ComposeEmail EmailFrom="Citizen Jane <joshua.qj@hotmail.com>" RequesterLoginName="joshua.qj@hotmail.com"
               Body=@(new MarkupString(@"
               <p>Dear {name},</p>
               <p>&nbsp;</p>

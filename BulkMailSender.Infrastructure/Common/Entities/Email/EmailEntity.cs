@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BulkMailSender.Infrastructure.Common.Models.Email {
+namespace BulkMailSender.Infrastructure.Common.Entities.Email {
     [Table("Email")]
     public class EmailEntity {
         [Key]
@@ -18,12 +18,12 @@ namespace BulkMailSender.Infrastructure.Common.Models.Email {
         public string EmailTo { get; set; } = null!;
 
         [StringLength(250)]
-        public string? Subject { get; set; }
+        public string Subject { get; set; }
 
-        public string? Body { get; set; }
+        public string Body { get; set; }
 
         [Column("IsBodyHtml")]
-        public bool? IsBodyHtml { get; set; }
+        public bool IsBodyHtml { get; set; }
 
         [Column("RequesterId")]
         public Guid RequesterId { get; set; }
@@ -32,7 +32,7 @@ namespace BulkMailSender.Infrastructure.Common.Models.Email {
         public DateTime? RequestedDate { get; set; }
 
         [Column("StatusId")]
-        public int? StatusId { get; set; }
+        public int StatusId { get; set; }
 
         [StringLength(1000)]
         public string? ErrorMessage { get; set; }

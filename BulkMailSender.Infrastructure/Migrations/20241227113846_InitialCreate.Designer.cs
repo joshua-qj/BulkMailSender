@@ -4,6 +4,7 @@ using BulkMailSender.Infrastructure.SQLServerPersistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BulkMailSender.Infrastructure.Migrations
 {
     [DbContext(typeof(SqlServerDbContext))]
-    partial class SqlServerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241227113846_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace BulkMailSender.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.AttachmentEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.AttachmentEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -43,7 +46,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.ToTable("Attachment");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailAttachmentEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailAttachmentEntity", b =>
                 {
                     b.Property<Guid>("EmailId")
                         .HasColumnType("uniqueidentifier");
@@ -58,7 +61,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.ToTable("EmailAttachment");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -70,7 +73,6 @@ namespace BulkMailSender.Infrastructure.Migrations
                         .HasColumnName("BatchId");
 
                     b.Property<string>("Body")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DisplayName")
@@ -91,7 +93,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool>("IsBodyHtml")
+                    b.Property<bool?>("IsBodyHtml")
                         .HasColumnType("bit")
                         .HasColumnName("IsBodyHtml");
 
@@ -102,12 +104,11 @@ namespace BulkMailSender.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("RequesterId");
 
-                    b.Property<int>("StatusId")
+                    b.Property<int?>("StatusId")
                         .HasColumnType("int")
                         .HasColumnName("StatusId");
 
                     b.Property<string>("Subject")
-                        .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
@@ -124,7 +125,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.ToTable("Email");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailInlineResourceEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailInlineResourceEntity", b =>
                 {
                     b.Property<Guid>("EmailId")
                         .HasColumnType("uniqueidentifier")
@@ -141,7 +142,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.ToTable("EmailInlineResource");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.InlineResourceEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.InlineResourceEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -165,14 +166,14 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.ToTable("InlineResource");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.MailServerEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.MailServerEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("Id");
 
-                    b.Property<bool>("IsSecure")
+                    b.Property<bool?>("IsSecure")
                         .HasColumnType("bit");
 
                     b.Property<int>("Port")
@@ -197,7 +198,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.RequesterEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.RequesterEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -234,7 +235,7 @@ namespace BulkMailSender.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.StatusEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.StatusEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -285,15 +286,15 @@ namespace BulkMailSender.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailAttachmentEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailAttachmentEntity", b =>
                 {
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.AttachmentEntity", "Attachment")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.AttachmentEntity", "Attachment")
                         .WithMany("EmailAttachments")
                         .HasForeignKey("AttachmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.EmailEntity", "Email")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.EmailEntity", "Email")
                         .WithMany("EmailAttachments")
                         .HasForeignKey("EmailId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -304,34 +305,33 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.Navigation("Email");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailEntity", b =>
                 {
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.RequesterEntity", "Requester")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.RequesterEntity", "Requester")
                         .WithMany("Emails")
                         .HasForeignKey("RequesterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.StatusEntity", "Status")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.StatusEntity", "Status")
                         .WithMany("Emails")
                         .HasForeignKey("StatusId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Requester");
 
                     b.Navigation("Status");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailInlineResourceEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailInlineResourceEntity", b =>
                 {
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.EmailEntity", "Email")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.EmailEntity", "Email")
                         .WithMany("EmailInlineResources")
                         .HasForeignKey("EmailId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.InlineResourceEntity", "InlineResource")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.InlineResourceEntity", "InlineResource")
                         .WithMany("EmailInlineResources")
                         .HasForeignKey("InlineResourceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -342,9 +342,9 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.Navigation("InlineResource");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.RequesterEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.RequesterEntity", b =>
                 {
-                    b.HasOne("BulkMailSender.Infrastructure.Common.Entities.Email.MailServerEntity", "MailServer")
+                    b.HasOne("BulkMailSender.Infrastructure.Common.Models.Email.MailServerEntity", "MailServer")
                         .WithMany("Requesters")
                         .HasForeignKey("MailServerId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -353,34 +353,34 @@ namespace BulkMailSender.Infrastructure.Migrations
                     b.Navigation("MailServer");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.AttachmentEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.AttachmentEntity", b =>
                 {
                     b.Navigation("EmailAttachments");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.EmailEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.EmailEntity", b =>
                 {
                     b.Navigation("EmailAttachments");
 
                     b.Navigation("EmailInlineResources");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.InlineResourceEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.InlineResourceEntity", b =>
                 {
                     b.Navigation("EmailInlineResources");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.MailServerEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.MailServerEntity", b =>
                 {
                     b.Navigation("Requesters");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.RequesterEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.RequesterEntity", b =>
                 {
                     b.Navigation("Emails");
                 });
 
-            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Entities.Email.StatusEntity", b =>
+            modelBuilder.Entity("BulkMailSender.Infrastructure.Common.Models.Email.StatusEntity", b =>
                 {
                     b.Navigation("Emails");
                 });

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BulkMailSender.Infrastructure.Common.Models.Email {
+namespace BulkMailSender.Infrastructure.Common.Entities.Email {
     [Table("EmailInlineResource")]
     public class EmailInlineResourceEntity {
         [Column("EmailId")]
