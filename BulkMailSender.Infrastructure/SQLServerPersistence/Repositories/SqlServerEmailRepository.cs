@@ -15,6 +15,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
         private Dictionary<Guid, Requester> _requesterConfigurations;
         public SqlServerEmailRepository(IDbContextFactory<SqlServerDbContext> contextFactory,
             SqlServerDbContext dbContext,
+
             IMapper mapper) {
             _contextFactory = contextFactory;
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -75,11 +76,37 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
 
         public async Task<Email> SaveEmailAsync(Email email) {
             using var dbContext = _contextFactory.CreateDbContext();
-
-            if (email != null) {
+            if (email == null) {
+                throw new ArgumentNullException(nameof(email));
+            } else {
                 var emailEntity = _mapper.Map<EmailEntity>(email);
-
+                //mapping isue with attachment
                 if (emailEntity != null) {
+
+                    // Check and save attachments
+                    foreach (var attachment in email.Attachments) {
+                        var existingAttachment = await dbContext.Attachments
+                            .FirstOrDefaultAsync(a => a.Id== attachment.Id);
+
+                        AttachmentEntity attachmentEntity;
+
+                        if (existingAttachment != null) {
+                            // Reuse existing attachment
+                            attachmentEntity = existingAttachment;
+                        } else {
+                            // Create a new attachment
+                            attachmentEntity = new AttachmentEntity {
+                                Id = attachment.Id,
+                                Name = attachment.FileName,
+                                Content = attachment.Content
+                            };
+                            dbContext.Attachments.Add(attachmentEntity);
+                        }
+                        emailEntity.EmailAttachments.Add(new EmailAttachmentEntity {
+                            EmailId = emailEntity.Id,
+                            AttachmentId = attachmentEntity.Id
+                        });
+                    }
                     await dbContext.Emails.AddAsync(emailEntity);
                     if (emailEntity.Status != null) {
                         dbContext.Entry(emailEntity.Status).State = EntityState.Unchanged;
@@ -90,12 +117,11 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                     await dbContext.SaveChangesAsync();
                     // Update the Email object with the generated Id
                     email.Id = emailEntity.Id; // Assuming the Id is generated after SaveChangesAsync
+
                 }
             }
-            if (email == null) {
-                throw new ArgumentNullException(nameof(email));
-            }
             return email;
+
         }
 
         public async Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage) {

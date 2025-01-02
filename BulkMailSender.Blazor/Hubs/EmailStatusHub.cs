@@ -35,10 +35,10 @@ namespace BulkMailSender.Blazor.Hubs {
             return Task.CompletedTask;
         }
 
-        public static string GetConnectionIdForJob(Guid jobId) {
-            return JobConnections.TryGetValue(jobId, out var connectionId) ? connectionId : null;
+        public static string GetConnectionIdForBatchJob(Guid batchId) {
+            return JobConnections.TryGetValue(batchId, out var connectionId) ? connectionId : null;
         }
-        public async Task SendStatusUpdate(string connectionId, EmailStatusUpdateEventViewModel statusUpdateEvent) {
+        public async Task NotifyEmailStatusAsync(string connectionId, EmailStatusUpdateEventDto statusUpdateEvent) {
             await Clients.Client(connectionId).SendAsync("ReceiveStatusUpdate", statusUpdateEvent);
         }
     }

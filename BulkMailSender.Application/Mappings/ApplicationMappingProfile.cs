@@ -2,7 +2,7 @@
 using BulkMailSender.Application.Dtos;
 using BulkMailSender.Domain.Entities.Email;
 using BulkMailSender.Domain.ValueObjects;
-using Attachment = BulkMailSender.Domain.ValueObjects.Attachment;
+using System.Linq;
 using InlineResource = BulkMailSender.Domain.ValueObjects.InlineResource;
 
 namespace BulkMailSender.Application.Mappings {
@@ -20,26 +20,23 @@ namespace BulkMailSender.Application.Mappings {
                    .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => new EmailAddress(src.EmailTo)))
                    .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId)) // Map StatusId directly
                    .ForMember(dest => dest.Status, opt => opt.Ignore()) // Ignore the derived Status property
-                                                                        //.ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments.Select(CreateAttachment)))
-                                                                        //.ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources.Select(CreateInlineResource)));
-             .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments.Select(dto => new Attachment(dto.FileName, dto.Content))))
-    .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources.Select(dto => new InlineResource(dto.FileName, dto.Content))));
+                   .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources.Select(CreateInlineResource)));
+            //         .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments.Select(dto => new Attachment(dto.FileName, dto.Content))))
+            //.ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources.Select(dto => new InlineResource(dto.FileName, dto.Content))));
 
             CreateMap<Email, EmailDto>()
                 .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => src.EmailFrom.Value))
                 .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => src.EmailTo.Value))
                 .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId))
-                 .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments))
                 .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources));
 
 
+            CreateMap<Attachment, AttachmentDto>().ReverseMap(); 
         }
 
-        private static Domain.ValueObjects.Attachment CreateAttachment(AttachmentDto dto) {
-            return new Domain.ValueObjects.Attachment(dto.FileName, dto.Content);
-        }
         private static Domain.ValueObjects.InlineResource CreateInlineResource(InlineResourceDto dto) {
             return new Domain.ValueObjects.InlineResource(dto.FileName, dto.Content);
         }
+
     }
 }

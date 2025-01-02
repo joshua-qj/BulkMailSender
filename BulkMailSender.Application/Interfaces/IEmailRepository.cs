@@ -7,9 +7,6 @@ namespace BulkMailSender.Application.Interfaces {
         Task<Requester> GetRequesterByIdAsync(Guid requesterId);
         Task LoadRequesterConfigurationsAsync();
         Task<Requester> GetRequesterByNameAsync(string hostName);
-        Task<Attachment> FindOrAddAttachmentAsync(Attachment attachment);
-
-        Task<InlineResource> FindOrAddInlineResourceAsync(InlineResource inlineResource);
         IQueryable<JobSummary> GetGroupedEmails(Guid userId);
         Task<byte[]> ReadFileAsBytesUseCaseAsync(Stream fileStream);
         Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage);

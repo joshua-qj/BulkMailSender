@@ -45,6 +45,7 @@ namespace BulkMailSender.Infrastructure.Common.Entities.Email {
         public virtual ICollection<EmailAttachmentEntity> EmailAttachments { get; set; } = new List<EmailAttachmentEntity>();
         public virtual ICollection<EmailInlineResourceEntity> EmailInlineResources { get; set; } = new List<EmailInlineResourceEntity>();
 
+
         [ForeignKey("RequesterId")]
         [InverseProperty("Emails")]
         public virtual RequesterEntity Requester { get; set; } = null!;

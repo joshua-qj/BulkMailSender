@@ -55,7 +55,8 @@ builder.Services.AddScoped<IExcelFileProcessingService, ExcelFileProcessingServi
 // import excel file usecase
 
 builder.Services.AddScoped<IExcelReaderUseCase, ExcelReaderUseCase>();
-
+builder.Services.AddTransient<IReadFileAsBytesUseCase, ReadFileAsBytesUseCase>();
+builder.Services.AddTransient<IReadFileAsBytesService, ReadFileAsBytesService>();
 
 // send email
 builder.Services.AddTransient<IEmailSenderService, SmtpEmailSenderService>();

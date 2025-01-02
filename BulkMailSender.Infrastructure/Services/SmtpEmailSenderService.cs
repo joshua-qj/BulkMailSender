@@ -1,6 +1,7 @@
 ﻿using BulkMailSender.Application.Interfaces;
 using BulkMailSender.Domain.Entities.Email;
 using System.Net.Mail;
+using System.Text;
 
 namespace BulkMailSender.Infrastructure.Services {
     public class SmtpEmailSenderService : IEmailSenderService {
@@ -22,9 +23,9 @@ namespace BulkMailSender.Infrastructure.Services {
                 mailMessage.To.Add(email.EmailTo.Value);
 
                 // Add attachments
-                //foreach (var attachment in email.Attachments) {
-                //    mailMessage.Attachments.Add(new Attachment(new MemoryStream(attachment.AttachedContent), attachment.Name));
-                //}
+                foreach (var attachment in email.Attachments) {
+                       mailMessage.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment.Content), attachment.FileName));
+                }
 
                 // Add inline resources
                 //foreach (var resource in email.InlineResources) {

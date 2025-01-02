@@ -12,7 +12,7 @@ namespace BulkMailSender.Domain.Services
             Requester requester,
             EmailAddress emailFrom,
            EmailAddress emailTo,
-    IEnumerable<ValueObjects.Attachment>? attachments = null,
+    IEnumerable<Attachment>? attachments = null,
     IEnumerable<ValueObjects.InlineResource>? inlineResources = null)
         {
             if (requester == null)

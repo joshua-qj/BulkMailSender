@@ -1,5 +1,7 @@
-﻿namespace BulkMailSender.Application.Interfaces {
+﻿using BulkMailSender.Application.Dtos;
+
+namespace BulkMailSender.Application.Interfaces {
     public interface ISignalRNotificationService {
-        Task NotifyEmailStatusAsync(Guid batchId, Guid emailId, string status, string message = null);
+        Task NotifyEmailStatusAsync(Guid batchId, EmailStatusUpdateEventDto emailStatusUpdateDto);
     }
 }

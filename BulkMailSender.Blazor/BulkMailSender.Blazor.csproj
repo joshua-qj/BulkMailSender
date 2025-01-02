@@ -21,6 +21,7 @@
 
 		<PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="9.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
 			<PrivateAssets>all</PrivateAssets>
@@ -38,6 +39,12 @@
 	<ItemGroup>
 		<ProjectReference Include="..\BulkMailSender.Application\BulkMailSender.Application.csproj" />
 		<ProjectReference Include="..\BulkMailSender.Infrastructure\BulkMailSender.Infrastructure.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Update="Components\Controls\EmailStatus.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
 	</ItemGroup>
 
 </Project>

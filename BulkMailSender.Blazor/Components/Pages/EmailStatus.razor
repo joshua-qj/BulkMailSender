@@ -1,0 +1,101 @@
+﻿@* @page "/emailsendingstatus" *@
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+@* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
+
+<div class="container my-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Sending Status</h5>
+            <div class="alert alert-warning" role="alert">
+                ⚠️ Warning: If you leave this page, you won't be able to return to view the current email sending progress.
+            </div>
+            <p class="card-text">@StatusMessage</p>
+
+            @if ((sent == total && total > 0) )
+            {
+                <div class="alert alert-success" role="alert">
+                    🎉 Email sending completed! Successfully sent all emails.
+                </div>
+            }
+            else if (failedEmails.Count > 0 && (sent + failedEmails.Count) == total)
+            {
+                <div class="alert alert-danger" role="alert">
+                    Email sending completed! Some emails failed to send. See details below.
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (failedEmails.Count > 0)
+    {
+        <div class="card mt-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Failed Emails</h5>
+                <ul class="list-group">
+                    @foreach (var failedEmail in failedEmails)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @failedEmail
+                            <span class="badge bg-danger rounded-pill">Failed</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int total { get; set; }
+
+    private string StatusMessage = "Initializing...";
+    private HubConnection? _hubConnection;
+    private int sent = 0;
+    private List<string> failedEmails = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Extract the jobId from the query parameters
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("jobId", out var jobIdString) &&
+            Guid.TryParse(jobIdString, out var jobId))
+        {
+            // Use a local variable for `total` to handle the `out` parameter
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("total", out var totalString) &&
+                int.TryParse(totalString, out var parsedTotal))
+            {
+                total = parsedTotal; // Assign the parsed value to the property
+            }
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/emailStatus"))
+                .Build();
+
+            _hubConnection.On<Application.Dtos.EmailStatusUpdateEventDto>("ReceiveStatusUpdate", (statusUpdate) =>
+                 {
+                     InvokeAsync(() =>
+                     {
+                         sent += statusUpdate.Status == "Completed" ? 1 : 0;
+                         StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.UpdatedAt}";
+                         failedEmails = statusUpdate.FailedEmails;
+
+            
+                         StateHasChanged();
+                     });
+                 });
+
+            await _hubConnection.StartAsync();
+            // Register this client with the jobId for updates
+            await _hubConnection.SendAsync("RegisterJobConnection", jobId);
+        }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

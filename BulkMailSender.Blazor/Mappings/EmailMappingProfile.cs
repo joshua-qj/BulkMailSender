@@ -12,6 +12,7 @@ namespace BulkMailSender.Blazor.Mappings {
 
             // Optionally, map back from EmailDto to EmailViewModel
             CreateMap<EmailDto, EmailViewModel>();
+            CreateMap<AttachmentViewModel, AttachmentDto>();
 
             // Map RequesterViewModel to RequesterDto
             CreateMap<RequesterViewModel, RequesterDto>()

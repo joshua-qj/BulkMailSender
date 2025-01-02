@@ -12,10 +12,14 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen
         {
             _emailRepository = emailRepository;
         }
-        public async Task<InlineResource> ExecuteAsync(InlineResource inlineResource)
-        {
-            var result = await _emailRepository.FindOrAddInlineResourceAsync(inlineResource);
-            return result;
+
+        public Task<InlineResource> ExecuteAsync(InlineResource inlineResource) {
+            throw new NotImplementedException();
         }
+        //public async Task<InlineResource> ExecuteAsync(InlineResource inlineResource)
+        //{
+        //    var result = await _emailRepository.FindOrAddInlineResourceAsync(inlineResource);
+        //    return result;
+        //}
     }
 }

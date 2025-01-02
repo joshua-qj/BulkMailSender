@@ -21,7 +21,7 @@ namespace BulkMailSender.Domain.Entities.Email
         public Guid? BatchID { get; set; }
         public Guid UserId { get; set; }
         // Using HashSet for uniqueness
-        public HashSet<ValueObjects.Attachment> Attachments { get; private set; } = new HashSet<ValueObjects.Attachment>();
+        public HashSet<Attachment> Attachments { get; private set; } = new HashSet<Attachment>();
         public HashSet<ValueObjects.InlineResource> InlineResources { get; private set; } = new HashSet<ValueObjects.InlineResource>();
 
         // Business Logic
@@ -39,7 +39,7 @@ namespace BulkMailSender.Domain.Entities.Email
 
             Requester = requester;
         }
-        public void AddAttachment(ValueObjects.Attachment attachment)
+        public void AddAttachment(Attachment attachment)
         {
             if (Attachments.Contains(attachment))
                 throw new InvalidOperationException("Duplicate attachment detected.");

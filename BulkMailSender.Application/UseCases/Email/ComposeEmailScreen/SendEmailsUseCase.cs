@@ -30,6 +30,7 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
         }
         public async Task ExecuteAsync(IEnumerable<EmailDto> emails) {
             string errorMessage = string.Empty;
+            var failedEmails = new List<string>();
             Domain.Entities.Email.Email email = new Domain.Entities.Email.Email();
             foreach (var emailDto in emails) {
                 try {
@@ -68,7 +69,24 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
                 }
                 finally {
                     if (emailDto.BatchID.HasValue) {
-                        await _notificationService.NotifyEmailStatusAsync(emailDto.BatchID.Value, emailDto.Id, "Failed", errorMessage);
+                     //   await _notificationService.NotifyEmailStatusAsync(emailDto.BatchID.Value, emailDto.Id, "Failed", errorMessage);
+                        try {
+                            var finalStatus = new EmailStatusUpdateEventDto {
+                                JobId = (Guid)emailDto.BatchID,
+                                Status = "Completed",
+                                Message = errorMessage,
+                                Sent = 1,
+                                Total = 100,
+                                FailedEmails = failedEmails,
+                                EmailTo = emailDto.EmailTo,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            await _notificationService.NotifyEmailStatusAsync(emailDto.BatchID.Value, finalStatus);
+                            //Console.WriteLine("Email status notified for BatchID: {BatchID}}", emailDto.BatchID);
+                        }
+                        catch (Exception ex) {
+                            Console.WriteLine($"Failed to notify email status for BatchID: {emailDto.BatchID}, EmailID: {emailDto.Id} {ex.Message}"  );
+                        }
                     }
                 }
             }

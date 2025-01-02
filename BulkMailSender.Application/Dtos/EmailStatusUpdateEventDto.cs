@@ -1,5 +1,5 @@
-﻿namespace BulkMailSender.Blazor.ViewModels {
-    public class EmailStatusUpdateEventViewModel {
+﻿namespace BulkMailSender.Application.Dtos {
+    public class EmailStatusUpdateEventDto {
         public Guid JobId { get; set; }
         public string? EmailTo { get; set; }
         public string? Status { get; set; }
