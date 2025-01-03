@@ -11,12 +11,7 @@
 @inject IGetRequesterByNameUseCase GetRequesterByNameUseCase
 @inject ISendEmailsUseCase SendEmailsUseCase
 @inject IReadFileAsBytesUseCase ReadFileAsBytesUseCase
-@*@inject IStoreEmailsUseCase SaveEmailsToDBUseCase
-@inject IGetRequesterByNameUseCase GetRequesterByNameUseCase
-@inject ISendEmailUseCase SendEmailUseCase
-@inject IFindOrAddAttachmentUseCase FindOrAddAttachmentUseCase
-@inject IFindOrAddInlineResourceUseCase FindOrAddInlineResourceUseCase
-@inject ISaveEmailUseCase SaveEmailUseCase
+@*
 @inject IEmailProcessor EmailProcessor
 @inject IUpdateEmailStatusUseCase UpdateEmailStatusUseCase
 @inject IOptionsSnapshot<EmailSendingSettings> EmailSettings *@
@@ -294,39 +289,31 @@
         if (confirmed)
         {
             isSendingEmails = true;
-            await Task.Delay(300);
+            emailViewModel.Body = ReplaceEmbeddedImagesWithCid(emailViewModel.Body, emailViewModel.InlineResources);
+           
+            List<string> inlineResourceIdsInBody = ExtractInlineResourceIds(emailViewModel.Body);
+            if (inlineResourceIdsInBody.Count != emailViewModel.InlineResources.Count)
+            {
+                emailViewModel.InlineResources = emailViewModel.InlineResources
+                    .Where(ir => inlineResourceIdsInBody.Contains(ir.Id.ToString()))
+                    .ToList();
+            }
             foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 2))
             {
                 // Send the current batch of emails
                 await SendEmailsUseCase.ExecuteAsync(emailBatch);
 
                 // Optionally, add delay or handle intermediate states
-                await Task.Delay(1000); // Simulate delay between batches
+                await Task.Delay(10); // Simulate delay between batches
             }
-
-
-            //await SendEmailsUseCase.ExecuteAsync(emailListDtos/* , cancellationToken */);
-
         }
         else
         {
             StatusMessage.Message = "Email sending canceled by user.";
             StatusMessage.IsError = false;
         }
-        // if (confirmed)
-        // {
-        //     await SendEmails(isTestEmail: false, new CancellationToken());
-        //     //putsh to signalr hub
-        //     if (StatusMessage.IsError is false && _batchId != Guid.Empty)
-        //     {
-        //         NavigationManager.NavigateTo($"/emailstatus?jobId={_batchId}");
-        //     }
-        // } else
-        // {
-        //     StatusMessage.Message = "Email sending canceled by user.";
-        //     StatusMessage.IsError = false;
-        // }
     }
+
     [JSInvokable("UpdateEmailBody")]
     public void UpdateEmailBody(string bodyContent)
     {
@@ -612,35 +599,28 @@
     // }
     private IEnumerable<List<EmailDto>> PrepareEmailBatchesFromExcel(List<ExcelImportDto> excelImportDtos, int batchSize)
     {
+       
         if (excelImportDtos != null && excelImportDtos.Any())
         {
             var batch = new List<EmailDto>(batchSize);
 
             foreach (var excelRow in excelImportDtos)
             {
-                // Generate an email and add it to the batch
-                batch.Add(new EmailDto
-                    {
-                        EmailFrom = emailViewModel.EmailFrom,
-                        DisplayName = $"{excelRow.FirstName} {excelRow.LastName}",
-                        EmailTo = excelRow.EmailAddress,
-                        Subject = emailViewModel.Subject,
-                        Body = emailViewModel.Body,
-                        IsBodyHtml = true,
-                        RequesterID = _requesterID,
-                        RequestedDate = DateTime.UtcNow,
-                        StatusId = 1, // Pending
-                        BatchID = _batchId, //UserId = CurrentUserId,
-                        Attachments = emailViewModel.Attachments
-                            .Select(a => new AttachmentDto
-                            {
-                                Id = a.Id,
-                                FileName = a.FileName,
-                                Content = a.Content
-                            }).ToList()
-                    });
+                var email = Mapper.Map<EmailDto>((excelRow, emailViewModel));
 
-                // When the batch is full, yield it
+                // Set additional properties
+                email.RequesterID = _requesterID;
+                email.BatchID = _batchId;
+                email.Body = email.Body.Replace("{name}",email.DisplayName);
+                batch.Add(email);
+                var inlineResourceIdsInBody = ExtractInlineResourceIds(emailViewModel.Body);
+                if (inlineResourceIdsInBody.Count != emailViewModel.InlineResources.Count)
+                {
+                    emailViewModel.InlineResources = emailViewModel.InlineResources
+                        .Where(ir => inlineResourceIdsInBody.Contains(ir.Id.ToString()))
+                        .ToList();
+
+                }
                 if (batch.Count == batchSize)
                 {
                     yield return batch;
@@ -657,26 +637,6 @@
     }
 
 
-    // private async Task ProcessEmailAsync(Email email)
-    // {
-    //     var savedEmail = await SaveEmailUseCase.ExecuteAsync(email);
-    //     var (isSuccess, errorMessage) = await SendEmailUseCase.ExecuteAsync(email);
-    //     if (isSuccess)
-    //         await UpdateEmailStatusUseCase.ExecuteAsync(savedEmail.Id, string.Empty);
-    //     else
-    //         await UpdateEmailStatusUseCase.ExecuteAsync(savedEmail.Id, errorMessage);
-    // }
-
-    // private List<Attachment> GetAttachments(IEnumerable<AttachmentViewModel> attachmentViewModels)
-    // {
-    //     return attachmentViewModels.Select(a => new Attachment
-    //         {
-    //             Id = a.Id,
-    //             Name = a.Name,
-    //             AttachedContent = a.AttachedContent
-    //         }).ToList();
-    // }
-
     private void UpdateStatusMessage(int successCount, int failCount)
     {
         if (failCount == 0)
@@ -690,6 +650,7 @@
             StatusMessage.IsError = true;
         }
     }
+
     private string ReplaceEmbeddedImagesWithCid(string emailBody, List<InlineResourceViewModel> embeddedImages)
     {
         foreach (var embeddedImage in embeddedImages)
@@ -730,7 +691,16 @@
         // Check for BMP (42 4D)
         if (imageContent[0] == 0x42 && imageContent[1] == 0x4D)
             return "image/bmp";
+        // Check for ICO (00 00 01 00)
+        if (imageContent[0] == 0x00 && imageContent[1] == 0x00 &&
+            imageContent[2] == 0x01 && imageContent[3] == 0x00)
+            return "image/x-icon";
 
+        // Check for SVG (text-based, starts with <?xml or <svg)
+        if (imageContent.Length >= 5 &&
+            ((imageContent[0] == 0x3C && imageContent[1] == 0x3F && imageContent[2] == 0x78 && imageContent[3] == 0x6D && imageContent[4] == 0x6C) || // <?xml
+             (imageContent[0] == 0x3C && imageContent[1] == 0x73 && imageContent[2] == 0x76 && imageContent[3] == 0x67)))                        // <svg
+            return "image/svg+xml";
         // Default MIME type for unknown file type
         return null;
     }

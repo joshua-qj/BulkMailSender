@@ -63,7 +63,7 @@ namespace BulkMailSender.Infrastructure.InMemoryPersistence.Contexts {
 
             // Configure additional properties, if necessary
             modelBuilder.Entity<AttachmentEntity>()
-                .Property(a => a.Name)
+                .Property(a => a.FileName)
                 .IsRequired()
                 .HasMaxLength(150);
 

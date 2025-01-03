@@ -118,8 +118,8 @@ select * from Host
 
 delete from EmailInlineResource;
 delete from InlineResource;
-delete from EmailSharedAttachment;
-delete from SharedAttachment;
+delete from EmailAttachment;
+delete from Attachment;
 delete from Email
 
 

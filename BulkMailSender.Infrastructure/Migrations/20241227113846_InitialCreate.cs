@@ -177,7 +177,7 @@ namespace BulkMailSender.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "Status",
-                columns: new[] { "Id", "Name" },
+                columns: new[] { "Id", "FileName" },
                 values: new object[,]
                 {
                     { 1, "Ready" },

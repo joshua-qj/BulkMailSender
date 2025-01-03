@@ -8,7 +8,6 @@ namespace BulkMailSender.Application.Interfaces {
         Task LoadRequesterConfigurationsAsync();
         Task<Requester> GetRequesterByNameAsync(string hostName);
         IQueryable<JobSummary> GetGroupedEmails(Guid userId);
-        Task<byte[]> ReadFileAsBytesUseCaseAsync(Stream fileStream);
         Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage);
     }
 }

@@ -22,7 +22,7 @@ namespace BulkMailSender.Domain.Entities.Email
         public Guid UserId { get; set; }
         // Using HashSet for uniqueness
         public HashSet<Attachment> Attachments { get; private set; } = new HashSet<Attachment>();
-        public HashSet<ValueObjects.InlineResource> InlineResources { get; private set; } = new HashSet<ValueObjects.InlineResource>();
+        public HashSet<InlineResource> InlineResources { get; private set; } = new HashSet<InlineResource>();
 
         // Business Logic
         public bool IsValid() =>
@@ -46,7 +46,7 @@ namespace BulkMailSender.Domain.Entities.Email
             Attachments.Add(attachment);
         }
 
-        public void AddInlineResource(ValueObjects.InlineResource resource)
+        public void AddInlineResource(InlineResource resource)
         {
             if (InlineResources.Contains(resource))
                 throw new InvalidOperationException("Duplicate inline resource detected.");

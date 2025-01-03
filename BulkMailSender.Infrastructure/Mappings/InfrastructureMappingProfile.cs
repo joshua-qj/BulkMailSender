@@ -15,33 +15,12 @@ namespace BulkMailSender.Infrastructure.Mappings {
     .ReverseMap() // Infrastructure to Domain Mapping
     .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => new EmailAddress(src.EmailFrom)))
     .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => new EmailAddress(src.EmailTo)))
-    //.ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.EmailAttachments)) // Map Attachments
-    //.ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.EmailInlineResources)) // Map Inline Resources
-    .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId)); // Direct StatusId mapping
+  .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId)); // Direct StatusId mapping
 
             CreateMap<Attachment, AttachmentEntity>();
+            CreateMap<InlineResource, InlineResourceEntity>();
 
-            //.ForMember(dest => dest.Status, opt => opt.Ignore())
-            //.ForMember(dest => dest.Requester, opt => opt.Ignore());
-            //    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => new StatusEntity { Id = (int)src.Status }));
-
-            // Mapping for Attachments
-            //CreateMap<Domain.ValueObjects.Attachment, AttachmentEntity>()
-            //    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.FileName))
-            //    .ForMember(dest => dest.Content, opt => opt.MapFrom(src => src.Content))
-            //    .ReverseMap()
-            //    .ConstructUsing(src => new Domain.ValueObjects.Attachment(src.Name, src.Content)); // Ensure proper construction for Attachment
-
-            // Mapping for Inline Resources
-            //CreateMap<InlineResource, EmailInlineResourceEntity>()
-            //    .ForMember(dest => dest.FileName, opt => opt.MapFrom(src => src.FileName))
-            //    .ForMember(dest => dest.Content, opt => opt.MapFrom(src => src.Content))
-            //    .ReverseMap()
-            //    .ConstructUsing(src => new InlineResource(src.FileName, src.Content)); // Ensure proper construction for InlineResource
-
-
-
-
+ 
             // Map from RequesterEntity to Requester (Domain Model)
             CreateMap<RequesterEntity, Requester>()
                 .ConstructUsing(src => new Requester(src.LoginName, src.Password, new MailServer(

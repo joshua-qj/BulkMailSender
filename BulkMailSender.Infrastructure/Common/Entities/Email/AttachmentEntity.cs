@@ -10,7 +10,7 @@ namespace BulkMailSender.Infrastructure.Common.Entities.Email {
         public Guid Id { get; set; }
 
         [StringLength(150)]
-        public string Name { get; set; } = null!;
+        public string FileName { get; set; } = null!;
 
         public byte[] Content { get; set; } = null!;
         public virtual ICollection<EmailAttachmentEntity> EmailAttachments { get; set; } = new List<EmailAttachmentEntity>();

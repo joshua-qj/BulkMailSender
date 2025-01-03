@@ -1,6 +1,7 @@
 ﻿using BulkMailSender.Application.Interfaces;
 using BulkMailSender.Domain.Entities.Email;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Text;
 
 namespace BulkMailSender.Infrastructure.Services {
@@ -21,21 +22,24 @@ namespace BulkMailSender.Infrastructure.Services {
                 };
 
                 mailMessage.To.Add(email.EmailTo.Value);
-
-                // Add attachments
-                foreach (var attachment in email.Attachments) {
-                       mailMessage.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment.Content), attachment.FileName));
-                }
+                var htmlView = AlternateView.CreateAlternateViewFromString(mailMessage.Body, null, MediaTypeNames.Text.Html);
 
                 // Add inline resources
-                //foreach (var resource in email.InlineResources) {
-                //    var linkedResource = new LinkedResource(new MemoryStream(resource.Content)) {
-                //        ContentId = resource.Id.ToString()
-                //    };
-                //    var htmlView = AlternateView.CreateAlternateViewFromString(mailMessage.Body, null, MediaTypeNames.Text.Html);
-                //    htmlView.LinkedResources.Add(linkedResource);
-                //    mailMessage.AlternateViews.Add(htmlView);
-                //}
+                foreach (var resource in email.InlineResources) {
+                    var linkedResource = new LinkedResource(new MemoryStream(resource.Content),MediaTypeNames.Image.Jpeg) {
+                        ContentId = resource.Id.ToString(),
+                        //ContentType = new ContentType("image/jpg"),
+                        TransferEncoding = TransferEncoding.Base64
+                    };
+
+                    htmlView.LinkedResources.Add(linkedResource);
+                }
+
+                mailMessage.AlternateViews.Add(htmlView);
+                // Add attachments
+                foreach (var attachment in email.Attachments) {
+                    mailMessage.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment.Content), attachment.FileName));
+                }
 
                 await smtpClient.SendMailAsync(mailMessage);
                 return (true, string.Empty);

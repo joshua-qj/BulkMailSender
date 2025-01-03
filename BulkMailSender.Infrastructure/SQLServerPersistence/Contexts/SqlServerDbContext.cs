@@ -64,7 +64,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Contexts {
 
             // Additional properties
             modelBuilder.Entity<AttachmentEntity>()
-                .Property(a => a.Name)
+                .Property(a => a.FileName)
                 .IsRequired()
                 .HasMaxLength(150);
 

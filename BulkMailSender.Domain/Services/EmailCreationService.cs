@@ -13,7 +13,7 @@ namespace BulkMailSender.Domain.Services
             EmailAddress emailFrom,
            EmailAddress emailTo,
     IEnumerable<Attachment>? attachments = null,
-    IEnumerable<ValueObjects.InlineResource>? inlineResources = null)
+    IEnumerable<InlineResource>? inlineResources = null)
         {
             if (requester == null)
                 throw new ArgumentException("Requester is required.");

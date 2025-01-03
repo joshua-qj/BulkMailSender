@@ -70,10 +70,6 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                 );
         }
 
-        public Task<byte[]> ReadFileAsBytesUseCaseAsync(Stream fileStream) {
-            throw new NotImplementedException();
-        }
-
         public async Task<Email> SaveEmailAsync(Email email) {
             using var dbContext = _contextFactory.CreateDbContext();
             if (email == null) {
@@ -88,23 +84,28 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                         var existingAttachment = await dbContext.Attachments
                             .FirstOrDefaultAsync(a => a.Id== attachment.Id);
 
-                        AttachmentEntity attachmentEntity;
-
-                        if (existingAttachment != null) {
-                            // Reuse existing attachment
-                            attachmentEntity = existingAttachment;
-                        } else {
-                            // Create a new attachment
-                            attachmentEntity = new AttachmentEntity {
-                                Id = attachment.Id,
-                                Name = attachment.FileName,
-                                Content = attachment.Content
-                            };
+                        //AttachmentEntity attachmentEntity;
+                        if (existingAttachment == null) {
+                            var attachmentEntity = _mapper.Map<AttachmentEntity>(attachment);
                             dbContext.Attachments.Add(attachmentEntity);
                         }
                         emailEntity.EmailAttachments.Add(new EmailAttachmentEntity {
                             EmailId = emailEntity.Id,
-                            AttachmentId = attachmentEntity.Id
+                            AttachmentId = attachment.Id
+                        });
+                    }
+                    foreach (var inlineResource in email.InlineResources) {
+                        var existingInlineResource = await dbContext.InlineResources
+                            .FirstOrDefaultAsync(a => a.Id == inlineResource.Id);
+
+                        //AttachmentEntity attachmentEntity;
+                        if (existingInlineResource == null) {
+                            var inlineResourceEntity = _mapper.Map<InlineResourceEntity>(inlineResource);
+                            dbContext.InlineResources.Add(inlineResourceEntity);
+                        }
+                        emailEntity.EmailInlineResources.Add(new EmailInlineResourceEntity {
+                            EmailId = emailEntity.Id,
+                            InlineResourceId = inlineResource.Id
                         });
                     }
                     await dbContext.Emails.AddAsync(emailEntity);
@@ -115,7 +116,6 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                         dbContext.Entry(emailEntity.Requester).State = EntityState.Unchanged;
                     }
                     await dbContext.SaveChangesAsync();
-                    // Update the Email object with the generated Id
                     email.Id = emailEntity.Id; // Assuming the Id is generated after SaveChangesAsync
 
                 }
