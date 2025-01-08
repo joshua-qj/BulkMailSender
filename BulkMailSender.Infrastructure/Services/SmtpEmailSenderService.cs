@@ -1,4 +1,4 @@
-﻿using BulkMailSender.Application.Interfaces;
+﻿using BulkMailSender.Application.Interfaces.Email;
 using BulkMailSender.Domain.Entities.Email;
 using System.Net.Mail;
 using System.Net.Mime;
@@ -18,7 +18,7 @@ namespace BulkMailSender.Infrastructure.Services {
                     From = new MailAddress(email.EmailFrom.Value, email.DisplayName),
                     Subject = email.Subject,
                     Body = email.Body,
-                    IsBodyHtml = email.IsBodyHTML
+                    IsBodyHtml = email.IsBodyHtml
                 };
 
                 mailMessage.To.Add(email.EmailTo.Value);

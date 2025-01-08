@@ -1,5 +1,4 @@
-﻿using BulkMailSender.Application.Dtos;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BulkMailSender.Blazor.ViewModels {
     public class EmailViewModel {
@@ -24,7 +23,7 @@ namespace BulkMailSender.Blazor.ViewModels {
         public RequesterViewModel Requester { get; set; } //maybe this should be removed
 
         // Email Address in lowercase as specified in the query
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid test recipient email address.")]
         public string TestRecipientEmail { get; set; }
         public Guid? BatchID { get; set; }
         public Guid UserId { get; set; }

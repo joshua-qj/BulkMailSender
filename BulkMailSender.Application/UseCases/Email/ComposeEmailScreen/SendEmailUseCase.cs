@@ -4,42 +4,34 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 
-namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen {
-    public class SendEmailUseCase : ISendEmailUseCase
-    {
+namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
+    public class SendEmailUseCase : ISendEmailUseCase {
         private readonly IGetRequesterByIdUseCase _getRequesterByIdUseCase;
 
 
-        public SendEmailUseCase(IGetRequesterByIdUseCase getRequesterByIdUseCase)
-
-        {
+        public SendEmailUseCase(IGetRequesterByIdUseCase getRequesterByIdUseCase) {
             _getRequesterByIdUseCase = getRequesterByIdUseCase;
 
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> ExecuteAsync(EmailDto email)
-        {
-            try
-            {
+        public async Task<(bool IsSuccess, string ErrorMessage)> ExecuteAsync(EmailDto email) {
+            try {
                 // Fetch requester SMTP configuration
                 var requester = await _getRequesterByIdUseCase.GetRequesterByIdAsync(email.RequesterID);
-                if (requester == null)
-                {
+                if (requester == null) {
                     const string errorMessage = "Requester configuration not found.";
                     return (false, errorMessage);
                 }
 
                 // Define SMTP settings based on the requester configuration
-                using var smtpClient = new SmtpClient(requester.Server.ServerName)
-                {
+                using var smtpClient = new SmtpClient(requester.Server.ServerName) {
                     Port = requester.Server.Port,
                     Credentials = new NetworkCredential(requester.LoginName, requester.Password),
                     EnableSsl = requester.Server.IsSecure
                 };
 
                 // Set up the email message
-                using var mailMessage = new MailMessage
-                {
+                using var mailMessage = new MailMessage {
                     From = new MailAddress(email.EmailFrom, email.DisplayName),
                     Subject = email.Subject,
                     Body = email.Body,
@@ -56,10 +48,8 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen {
                 var htmlView = AlternateView.CreateAlternateViewFromString(mailMessage.Body, null, MediaTypeNames.Text.Html);
 
                 // Add inline images from EmbededImages
-                foreach (var embeddedImage in email.InlineResources)
-                {
-                    var linkedResource = new LinkedResource(new MemoryStream(embeddedImage.Content), MediaTypeNames.Image.Jpeg)
-                    {
+                foreach (var embeddedImage in email.InlineResources) {
+                    var linkedResource = new LinkedResource(new MemoryStream(embeddedImage.Content), MediaTypeNames.Image.Jpeg) {
                         //ContentId = embeddedImage.Id.ToString(), // Ensure this matches the cid in your HTML
                         TransferEncoding = TransferEncoding.Base64 // Encode inline image
                     };
@@ -71,9 +61,8 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen {
                 mailMessage.AlternateViews.Add(htmlView);
 
                 // Add any attachments
-                foreach (var attachment in email.Attachments)
-                {
-                    mailMessage.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment.Content), attachment.FileName));
+                foreach (var attachment in email.Attachments) {
+                    mailMessage.Attachments.Add(new Attachment(new MemoryStream(attachment.Content), attachment.FileName));
                 }
 
                 // Send the email
@@ -82,8 +71,7 @@ namespace EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen {
                 // Email sent successfully
                 return (true, string.Empty);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 // Log the error
                 var errorMessage = $"Error sending email: {ex.Message}";
 

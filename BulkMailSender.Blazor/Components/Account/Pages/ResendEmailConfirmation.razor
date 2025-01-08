@@ -1,0 +1,77 @@
+﻿@page "/Account/ResendEmailConfirmation"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject IFindUserByEmailUseCase FindUserByEmailUseCase
+@inject IFindUserByEmailUseCase FindUserByEmailUseCase
+@inject IResendEmailConfirmationUseCase ResendEmailConfirmationUseCase
+
+<PageTitle>Resend email confirmation</PageTitle>
+
+<h1 class="center-content">Resend email confirmation</h1>
+<h2>Enter your email.</h2>
+<hr />
+<StatusMessage Message="@message" />
+<div class="row">
+    <div class="col-md-12">
+        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
+                <label for="email" class="form-label">Email</label>
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? message;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    private async Task OnValidSubmitAsync()
+    {
+        var user = await FindUserByEmailUseCase.ExecuteAsync(Input.Email);
+        if (user is null)
+        {
+            message = "Verification email sent. Please check your email.";
+            return;
+        }
+
+        var baseUri = NavigationManager.BaseUri;
+        var result = await ResendEmailConfirmationUseCase.ExecuteAsync(user, baseUri);
+
+        if (result.IsSuccess)
+        {
+            // Redirect to the confirmation page
+            var queryString = new Dictionary<string, object?>
+                {
+                    ["Email"] = Input.Email
+                };
+            var confirmationUrl = NavigationManager.GetUriWithQueryParameters("/Account/RegisterConfirmation", queryString);
+            NavigationManager.NavigateTo(confirmationUrl);
+        }
+        else
+        {
+            // Display an error message if the process fails
+            message = string.Join(", ", result.Errors);
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+    }
+}

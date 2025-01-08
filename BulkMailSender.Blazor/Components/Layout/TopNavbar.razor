@@ -1,4 +1,5 @@
 ﻿@rendermode InteractiveServer
+@inject ILogoutUseCase LogoutUseCase
 @inject NavigationManager NavigationManager
 @* @inject IDisposable *@
 
@@ -6,7 +7,7 @@
     <div class="container-fluid">
         <a class="navbar-brand" href="">Bulk Mail Sender</a>
         <button @onclick="ToggleMenu"
-                class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="@collapseOrNot navbar-collapse" id="navbarSupportedContent">
@@ -23,59 +24,48 @@
                         <NavLink class="nav-link" href="/testa">Test A</NavLink>
                     </li>
                 }
-                @if (!isAuthenticated)
-                {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/testb">Test B</NavLink>
-                    </li>
-                }
-                @if (!isAuthenticated)
-                {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/testc">Test C </NavLink>
-                    </li>
-                }
 
-                @if (!isAuthenticated)
+
+                @if (isAuthenticated)
                 {
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/xyz">XYZ </NavLink>
                     </li>
                 }
-                @if (!isAuthenticated)
+                @if (isAuthenticated)
                 {
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/custom">Custom </NavLink>
                     </li>
                 }
 
-                @if (!isAuthenticated)
+                @if (isAuthenticated)
                 {
                     <li class="nav-item">
                         <NavLink class="nav-link" href="@jobSummaryUrl">Email Job Summary</NavLink>
                     </li>
-         
+
                 }
-                
+
 
                 @if (isAuthenticated && isAdmin)
                 {
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/Account/ManageUsers">Manage Users</NavLink>
                     </li>
-      
+
                 }
             </ul>
 
-@*             <AuthorizeView>
-                <Authorized> *@
+            <AuthorizeView>
+                <Authorized>
                     <div class="navbar-nav px-3">
                         <NavLink class="nav-link" href="Account/Manage">
-                            <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @* @context.User.Identity?.Name *@
+                            <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
                         </NavLink>
                     </div>
                     <div class="navbar-nav px-3">
-                        <form action="Account/Logout" method="post">
+                        <form action="/Account/Logout" method="post">
                             <AntiforgeryToken />
                             <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                             <button type="submit" class="btn btn-link nav-link">
@@ -83,8 +73,9 @@
                             </button>
                         </form>
                     </div>
- @*                </Authorized>
-                <NotAuthorized> *@
+
+                </Authorized>
+                <NotAuthorized>
                     <div class="navbar-nav px-3">
                         <NavLink class="nav-link" href="Account/Register">
                             <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
@@ -95,9 +86,9 @@
                             <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
                         </NavLink>
                     </div>
-@*                 </NotAuthorized>
+                </NotAuthorized>
             </AuthorizeView>
- *@
+
 
         </div>
     </div>
@@ -124,28 +115,30 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
-        // var authState = await authenticationStateTask;
-        // var user = authState.User;
+        var authState = await authenticationStateTask;
+        var user = authState.User;
         // userId= user.GetUserId();
 
-        // if (user.Identity != null && user.Identity.IsAuthenticated)
-        // {
-        //     isAuthenticated = true;
-        //     isAdmin = user.HasClaim(c => c.Type == "Permission" && c.Value == "Admin");
-        //     var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        //     if (Guid.TryParse(userIdClaim, out var parsedUserId))
-        //     {
-        //         userId = parsedUserId;
-        //         jobSummaryUrl = $"/emailjobsummary/{userId}";
-        //     }
-        // }
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            isAuthenticated = true;
+            isAdmin = user.HasClaim(c => c.Type == "Permission" && c.Value == "Admin");
+            var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdClaim, out var parsedUserId))
+            {
+                userId = parsedUserId;
+                jobSummaryUrl = $"/emailjobsummary/{userId}";
+            }
+        }
     }
 
-private void ToggleMenu()
-{
-    isCollapse = !isCollapse;
-    collapseOrNot = isCollapse ? "collapse" : string.Empty;
-}
+    private void ToggleMenu()
+    {
+        isCollapse = !isCollapse;
+        collapseOrNot = isCollapse ? "collapse" : string.Empty;
+    }
+
+
 private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
 {
     currentUrl = NavigationManager.ToBaseRelativePath(e.Location);

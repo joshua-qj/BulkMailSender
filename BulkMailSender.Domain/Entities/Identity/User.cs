@@ -8,14 +8,7 @@
         public string PasswordHash { get; set; }
         public bool IsActive { get; set; } = true;
         // Any other domain-specific properties for a user
-        public User(string username, string email, string passwordHash)
-        {
-            Id = Guid.NewGuid();
-            Username = username;
-            Email = email;
-            PasswordHash = passwordHash;
-            IsActive = true;
-        }
+
 
         // Activate or deactivate methods
         public void Activate() => IsActive = true;

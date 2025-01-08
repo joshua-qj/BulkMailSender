@@ -1,5 +1,5 @@
 ﻿using BulkMailSender.Application.Dtos;
-using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Interfaces.CommonService;
 using BulkMailSender.Application.UseCases.Email.ComposeEmailScreen.interfaces;
 
 namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {

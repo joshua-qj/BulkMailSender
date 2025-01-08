@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using BulkMailSender.Application.Dtos;
+using BulkMailSender.Application.Dtos.UserDtos;
 using BulkMailSender.Domain.Entities.Email;
+using BulkMailSender.Domain.Entities.Identity;
 using BulkMailSender.Domain.ValueObjects;
 
 namespace BulkMailSender.Application.Mappings {
@@ -27,9 +29,23 @@ namespace BulkMailSender.Application.Mappings {
 
 
             CreateMap<Attachment, AttachmentDto>().ReverseMap(); 
-            CreateMap<InlineResource, InlineResourceDto>().ReverseMap(); 
-        }
+            CreateMap<InlineResource, InlineResourceDto>().ReverseMap();
 
+
+
+
+
+
+            CreateMap<UserDto, User>()
+    .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Ignore password hash for security reasons
+   
+
+            // Optional: Configure mapping from User to UserDto (if needed)
+            CreateMap<User, UserDto>();
+
+            CreateMap<Result, ResultDto>();
+            CreateMap<ResultDto, Result>();
+        }
 
     }
 }

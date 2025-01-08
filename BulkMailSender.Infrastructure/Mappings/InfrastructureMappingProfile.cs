@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using BulkMailSender.Application.Dtos;
 using BulkMailSender.Domain.Entities.Email;
+using BulkMailSender.Domain.Entities.Identity;
 using BulkMailSender.Domain.Enums;
 using BulkMailSender.Domain.ValueObjects;
 using BulkMailSender.Infrastructure.Common.Entities.Email;
+using BulkMailSender.Infrastructure.Common.Entities.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace BulkMailSender.Infrastructure.Mappings {
     public class InfrastructureMappingProfile : Profile {
@@ -49,6 +52,28 @@ namespace BulkMailSender.Infrastructure.Mappings {
             CreateMap<Status, StatusEntity>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => (int)src))
                 .ForMember(dest => dest.Name, opt => opt.Ignore());
+
+
+            //user mapping
+            CreateMap<User, ApplicationUser>()
+               .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString())) // Convert Guid to string
+               .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Username))
+               .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+               .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.PasswordHash))
+               .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive));
+
+            // Map from ApplicationUser to Domain User
+            CreateMap<ApplicationUser, User>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id))) // Convert string to Guid
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.UserName))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+               // .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.PasswordHash))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive));
+            CreateMap<IdentityResult, Result>()
+                .ConvertUsing(identityResult =>
+                    identityResult.Succeeded
+                        ? Result.Success()
+                        : Result.Failure(identityResult.Errors.Select(e => e.Description).ToArray()));
         }
     }
 }

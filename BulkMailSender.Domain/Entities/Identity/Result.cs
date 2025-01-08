@@ -1,29 +1,28 @@
 ﻿namespace BulkMailSender.Domain.Entities.Identity
 {
-    public class Result
-    {
+    public class Result {
+        private readonly List<string> _errors = new();
+
         public bool IsSuccess { get; private set; }
-        public string Message { get; private set; }
-        public bool RequiresTwoFactor { get; private set; }
-        public bool IsLockedOut { get; private set; }
-        public IEnumerable<string>? Errors { get; }
-        // Constructor for successful results
-        public static Result Success(string message = "") => new Result { IsSuccess = true, Message = message };
+        public IEnumerable<string> Errors => _errors;
 
+        private Result(bool isSuccess, IEnumerable<string> errors) {
+            IsSuccess = isSuccess;
+            _errors.AddRange(errors);
+        }
 
-        // Constructor for failed results with a message
-        public static Result Failure(string message) => new Result { IsSuccess = false, Message = message };
+        public static Result Success() {
+            return new Result(true, Enumerable.Empty<string>());
+        }
 
-        // Constructor for results with additional information (e.g., requires 2FA or locked out)
-        public static Result Failure(string message, bool requiresTwoFactor, bool isLockedOut)
-        {
-            return new Result
-            {
-                IsSuccess = false,
-                Message = message,
-                RequiresTwoFactor = requiresTwoFactor,
-                IsLockedOut = isLockedOut
-            };
+        public static Result Failure(params string[] errors) {
+            return new Result(false, errors);
+        }
+
+        public override string ToString() {
+            return IsSuccess
+                ? "Succeeded"
+                : $"Failed : {string.Join(", ", Errors)}";
         }
     }
 }

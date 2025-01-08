@@ -1,4 +1,4 @@
-﻿using BulkMailSender.Application.Interfaces;
+﻿using BulkMailSender.Application.Interfaces.CommonService;
 
 namespace BulkMailSender.Infrastructure.Services {
     public class ReadFileAsBytesService : IReadFileAsBytesService {

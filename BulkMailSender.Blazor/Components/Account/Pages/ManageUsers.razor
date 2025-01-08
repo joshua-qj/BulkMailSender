@@ -1,0 +1,57 @@
+﻿@page "/Account/ManageUsers"
+@using BulkMailSender.Blazor.ViewModels.UserViewModels
+
+@* @using EmailSender.CoreBusiness.Identity *@
+@* @inject IGetUsersUseCase GetUsersUseCase *@
+@attribute [Authorize(Policy = "Admin")]
+
+<div class="container mt-5">
+    <h3 class="center-content mb-4">Manage Users</h3>
+
+    @if (users is not null && users.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">User Email</th>
+                        <th scope="col" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.Email</td>
+                            <td class="text-center">
+                                <a href="/account/manageuser/@user.Id" class="btn btn-sm btn-outline-primary">Manage</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else if (users == null)
+    {
+        <div class="alert alert-info text-center" role="alert">
+            Loading users...
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center" role="alert">
+            No users found.
+        </div>
+    }
+</div>
+
+@code {
+    private List<UserViewModel>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+       // users = await GetUsersUseCase.ExecuteAsync();
+    }
+
+}

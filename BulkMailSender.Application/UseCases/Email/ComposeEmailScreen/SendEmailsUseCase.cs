@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
 using BulkMailSender.Application.Dtos;
-using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Interfaces.CommonService;
+using BulkMailSender.Application.Interfaces.Email;
 using BulkMailSender.Application.UseCases.Email.ComposeEmailScreen.interfaces;
-using BulkMailSender.Domain.Entities.Email;
-using EmailSender.UseCases.EmailCompaigns.ComposeEmailScreen;
-using System;
 namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
     public class SendEmailsUseCase : ISendEmailsUseCase {
         private readonly IMapper _mapper;

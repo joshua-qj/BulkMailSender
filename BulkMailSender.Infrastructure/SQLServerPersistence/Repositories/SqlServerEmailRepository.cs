@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using BulkMailSender.Application.Dtos;
-using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Interfaces.Email;
 using BulkMailSender.Domain.Entities.Email;
 using BulkMailSender.Infrastructure.Common.Entities.Email;
 using BulkMailSender.Infrastructure.SQLServerPersistence.Contexts;
@@ -124,15 +124,15 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
 
         }
 
-        public async Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage) {
+        public async Task UpdateEmailStatusAsync(Email email, string? errorMessage) {
             using var dbContext = _contextFactory.CreateDbContext();
 
-            var emailEntity = await dbContext.Emails.FindAsync(emailDto.Id);
+            var emailEntity = await dbContext.Emails.FindAsync(email.Id);
             if (emailEntity == null) {
                 throw new KeyNotFoundException($"Email not found, can not update email status.");
             }
-            emailEntity.StatusId = emailDto.StatusId;
-            emailEntity.ErrorMessage = emailDto.ErrorMessage;
+            emailEntity.StatusId = email.StatusId;
+            emailEntity.ErrorMessage = email.ErrorMessage;
             dbContext.Emails.Update(emailEntity);
             await dbContext.SaveChangesAsync();
         }

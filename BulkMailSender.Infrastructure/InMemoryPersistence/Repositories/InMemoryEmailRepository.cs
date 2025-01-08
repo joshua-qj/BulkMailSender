@@ -1,5 +1,5 @@
 ﻿using BulkMailSender.Application.Dtos;
-using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Interfaces.Email;
 using BulkMailSender.Domain.Entities.Email;
 
 namespace BulkMailSender.Infrastructure.InMemoryPersistence.Repositories {
@@ -37,7 +37,7 @@ namespace BulkMailSender.Infrastructure.InMemoryPersistence.Repositories {
         }
 
 
-        public Task UpdateEmailStatusAsync(EmailDto emailDto, string? errorMessage) {
+        public Task UpdateEmailStatusAsync(Email email, string? errorMessage) {
             throw new NotImplementedException();
         }
     }

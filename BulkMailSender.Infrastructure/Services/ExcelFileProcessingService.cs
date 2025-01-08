@@ -1,5 +1,5 @@
 ﻿using BulkMailSender.Application.Dtos;
-using BulkMailSender.Application.Interfaces;
+using BulkMailSender.Application.Interfaces.CommonService;
 using ClosedXML.Excel;
 
 namespace BulkMailSender.Infrastructure.Services {

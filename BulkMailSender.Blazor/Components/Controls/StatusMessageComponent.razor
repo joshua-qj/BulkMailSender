@@ -1,0 +1,12 @@
+﻿@using BulkMailSender.Blazor.ViewModels
+
+@if (!string.IsNullOrEmpty(StatusMessage?.Message))
+{
+    <div class="alert @(StatusMessage.IsError ? "alert-danger" : "alert-success")">
+        <strong>@(StatusMessage.IsError ? "Error:" : "Success:")</strong> @StatusMessage.Message
+    </div>
+}
+
+@code {
+    [Parameter] public StatusMessageViewModel StatusMessage { get; set; } = new StatusMessageViewModel();
+}

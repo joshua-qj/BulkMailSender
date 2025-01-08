@@ -1,0 +1,67 @@
+﻿@page "/Account/ConfirmEmail"
+@inject IConfirmEmailUserCase ConfirmEmailUserCase
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+<PageTitle>Confirm email</PageTitle>
+
+<h1>Confirm email</h1>
+<StatusMessage Message="@statusMessage" />
+
+@code {
+    private string? statusMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Code is null)
+        {
+            RedirectManager.RedirectTo("");
+        }
+        try
+        {
+            // Decode the encoded userId and code
+            var decodedUserId = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(UserId));
+            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+
+            // Confirm email
+            if (Guid.TryParse(decodedUserId, out var userIdGuid) && !string.IsNullOrEmpty(decodedCode))
+            {
+                var confirmationResult = await ConfirmEmailUserCase.ExecuteAsync(userIdGuid, decodedCode);
+                statusMessage = confirmationResult.IsSuccess ? "Thank you for confirming your email." : "Error confirming your email.";
+
+                StateHasChanged();
+                // Optionally redirect or show a message
+                if (confirmationResult.IsSuccess)
+                {
+                    await Task.Delay(3000); // Delay for the user to see success
+                    RedirectManager.RedirectTo("/"); // Redirect to home or login page
+                }
+       }
+            else
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                statusMessage = $"Invalid user ID format: {UserId}";
+            }
+        }
+        catch (FormatException)
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            statusMessage = "Invalid format for UserId or Code.";
+        }
+    }
+}
