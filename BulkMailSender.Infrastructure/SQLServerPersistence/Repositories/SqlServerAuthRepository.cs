@@ -1,4 +1,5 @@
-﻿using BulkMailSender.Application.Interfaces.User;
+﻿using AutoMapper;
+using BulkMailSender.Application.Interfaces.User;
 using BulkMailSender.Domain.Entities.Identity;
 using BulkMailSender.Infrastructure.Common.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -7,9 +8,13 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
     public class SqlServerAuthRepository : IAuthRepository {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IMapper _mapper;
 
-        public SqlServerAuthRepository(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager) {
+        public SqlServerAuthRepository(UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            IMapper mapper) {
             _signInManager = signInManager;
+            _mapper = mapper;
             _userManager = userManager;
         }
         public async Task<Result> AddPasswordAsync(Guid userId, string newPassword) {
@@ -22,7 +27,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
 
                 var hasPassword = await _userManager.HasPasswordAsync(user);
                 if (hasPassword) {
-                    return Result.Failure("User Password already exists"); 
+                    return Result.Failure("User Password already exists");
                 }
 
                 // Add the new password
@@ -39,10 +44,30 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             }
         }
 
-        public Task<Result> AddUserClaimAsync(string userId, Claim newClaim) {
-            throw new NotImplementedException();
+        public async Task<Result> AddUserClaimAsync(string userId, Claim newClaim) {
+            ApplicationUser? user = await _userManager.FindByIdAsync(userId);
+            if (user == null) {
+                return Result.Failure("User not found");
+            }
+            System.Security.Claims.Claim systemClaim = _mapper.Map<System.Security.Claims.Claim>(newClaim);
+            IdentityResult result = await _userManager.AddClaimAsync(user, systemClaim);
+            if (!result.Succeeded) {
+                return Result.Failure(result.Errors.Select(e => e.Description).ToArray());
+            }
+            return Result.Success();
         }
-
+        public async Task<Result> RemoveClaimAsync(string userId, Claim oldClaim) {
+            ApplicationUser? user = await _userManager.FindByIdAsync(userId);
+            if (user == null) {
+                return Result.Failure("User not found");
+            }
+            System.Security.Claims.Claim systemClaim = _mapper.Map<System.Security.Claims.Claim>(oldClaim);
+            IdentityResult result = await _userManager.RemoveClaimAsync(user, systemClaim);
+            if (!result.Succeeded) {
+                return Result.Failure(result.Errors.Select(e => e.Description).ToArray());
+            }
+            return Result.Success();
+        }
         public async Task<Result> AuthenticateAsync(string username, string password, bool rememberMe) {
 
             var user = await _userManager.FindByNameAsync(username);
@@ -94,7 +119,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             if (user == null) {
                 return false;
             }
-            var hasPassword= await _userManager.HasPasswordAsync(user);
+            var hasPassword = await _userManager.HasPasswordAsync(user);
             return hasPassword ? true : false;
         }
 
@@ -114,14 +139,19 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
         public async Task<string> GeneratePasswordResetTokenAsync(Guid userId) {
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null) {
-                return null;
+                return string.Empty;
             }
             // Generate the password reset token
             return await _userManager.GeneratePasswordResetTokenAsync(user);
         }
 
-        public Task<IEnumerable<Claim>> GetUserClaimsAsync(string userId) {
-            throw new NotImplementedException();
+        public async Task<IEnumerable<Claim>> GetUserClaimsAsync(string userId) {
+            ApplicationUser? user = await _userManager.FindByIdAsync(userId);
+            if (user == null) {
+                return Enumerable.Empty<Claim>();
+            }
+            var claims = await _userManager.GetClaimsAsync(user);
+            return _mapper.Map<IEnumerable<Claim>>(claims);
         }
 
         public async Task<Result> IsEmailConfirmedAsync(Guid userId) {
@@ -133,13 +163,11 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
 
             }
             return Result.Failure("User not found!");
-  }
-
-
-
-        public Task<Result> RemoveClaimAsync(string userId, Claim oldClaim) {
-            throw new NotImplementedException();
         }
+
+
+
+
 
         public Task<Result> ReplaceUserClaimAsync(string userId, Claim oldClaim, Claim newClaim) {
             throw new NotImplementedException();

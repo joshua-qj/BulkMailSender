@@ -1,9 +1,8 @@
-﻿@page "/Account/ManageUsers"
-@using BulkMailSender.Blazor.ViewModels.UserViewModels
+﻿@page "/UserAccount/ManageUsers"
 
-@* @using EmailSender.CoreBusiness.Identity *@
-@* @inject IGetUsersUseCase GetUsersUseCase *@
-@attribute [Authorize(Policy = "Admin")]
+@inject IGetUsersUseCase GetUsersUseCase
+@inject IMapper Mapper
+@* @attribute [Authorize(Policy = "Admin")] *@
 
 <div class="container mt-5">
     <h3 class="center-content mb-4">Manage Users</h3>
@@ -24,7 +23,7 @@
                         <tr>
                             <td>@user.Email</td>
                             <td class="text-center">
-                                <a href="/account/manageuser/@user.Id" class="btn btn-sm btn-outline-primary">Manage</a>
+                                <a href="/Useraccount/manageuser/@user.Id" class="btn btn-sm btn-outline-primary">Manage</a>
                             </td>
                         </tr>
                     }
@@ -51,7 +50,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-       // users = await GetUsersUseCase.ExecuteAsync();
+        var userDtos = await GetUsersUseCase.ExecuteAsync();
+        users = Mapper.Map<List<UserViewModel>>(userDtos);
     }
 
 }

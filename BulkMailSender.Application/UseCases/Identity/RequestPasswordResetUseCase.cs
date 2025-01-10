@@ -46,8 +46,10 @@ namespace BulkMailSender.Application.UseCases.Identity {
 
 
             try {
-                var token = await _authRepository.GeneratePasswordResetTokenAsync(user.Id);
-                // Encode token and user ID for URL
+                string token = await _authRepository.GeneratePasswordResetTokenAsync(user.Id);
+                if (string.IsNullOrWhiteSpace(token)) {
+                    return ResultDto.Failure("An error occurred while generating the password reset token.");
+                }
                 var tokenEncoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
                 var userIdEncoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(user.Id.ToString()));
                 var resetLink = $"{baseUrl}Account/ResetPassword?userId={userIdEncoded}&Code={tokenEncoded}";

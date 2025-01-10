@@ -48,10 +48,10 @@
                 }
 
 
-                @if (isAuthenticated && isAdmin)
+                @if (isAuthenticated @* && isAdmin *@)
                 {
                     <li class="nav-item">
-                        <NavLink class="nav-link" href="/Account/ManageUsers">Manage Users</NavLink>
+                        <NavLink class="nav-link" href="/UserAccount/ManageUsers">Manage Users</NavLink>
                     </li>
 
                 }

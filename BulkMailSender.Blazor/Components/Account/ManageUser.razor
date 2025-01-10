@@ -1,12 +1,12 @@
-﻿@page "/Account/ManageUser/{userid}"
+﻿
+@page "/UserAccount/ManageUser/{userid}"
 @using System.ComponentModel.DataAnnotations
 
-@attribute [Authorize(Policy = "Admin")]
-@* @inject IGetUserWithClaimsUseCase GetUserWithClaimsUseCase
-@inject IUpdateUserClaimsUseCase UpdateUserClaimsUseCase *@
+@* @attribute [Authorize(Policy = "Admin")] *@
+@inject IGetUserWithClaimsUseCase GetUserWithClaimsUseCase
+@inject IUpdateUserClaimsUseCase UpdateUserClaimsUseCase
 @inject NavigationManager NavigationManager
-@* @inject IToggleUserStatusUseCase ToggleUserStatusUseCase *@
-
+@inject IToggleUserStatusUseCase ToggleUserStatusUseCase
 
 <div class="container mt-5">
     <div class="card shadow">
@@ -16,7 +16,7 @@
         <div class="card-body">
             @if (viewModel != null)
             {
-                <EditForm Model="viewModel" OnValidSubmit="SaveUser" class="needs-validation">
+                <EditForm Model="viewModel" OnValidSubmit="SaveUser" class="needs-validation" FormName="managerUser">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="alert alert-danger" />
 
@@ -33,7 +33,7 @@
                                 <div class="form-check form-switch">
                                     <input type="checkbox" id="@permission" value="@permission" class="form-check-input"
                                            checked="@viewModel.SelectedPermissions.Contains(permission)"
-                                           @onchange="(e) => TogglePermission(permission, (bool)e.Value)" />
+                                           @onchange="(e) => TogglePermission(permission, ((ChangeEventArgs)e).Value as bool? ?? false)" />
                                     <label for="@permission" class="form-check-label form-switch-label">@permission</label>
                                 </div>
                             }
@@ -59,54 +59,57 @@
 @code {
     [Parameter]
     public string? UserId { get; set; }
-
+    private string? message;
     private ManageUserViewModel? viewModel;
     private bool userActiveStatus;
     private List<string> allPermissions = new() { "Admin", "CanAccessEmailSending" };
     protected override async Task OnParametersSetAsync()
     {
-        if (UserId != null)
+        if (UserId != null && viewModel == null)
         {
-            // var (user, userClaims) = await GetUserWithClaimsUseCase.ExecuteAsync(UserId, "Permission");
-            // if (user is not null)
-            // {
-            //     userActiveStatus = user.IsActive; viewModel = new ManageUserViewModel
-            //         {
-            //             Email = user.Email,
-            //             SelectedPermissions = userClaims,
-            //             IsDeleted = user.IsActive
-            //         };
-            // }  
+            var (user, userClaims) = await GetUserWithClaimsUseCase.ExecuteAsync(UserId, "Permission");
+            if (user is not null)
+            {
+                userActiveStatus = user.IsActive; viewModel = new ManageUserViewModel
+                    {
+                        Email = user.Email,
+                        SelectedPermissions = userClaims,
+                        IsDeleted = user.IsActive
+                    };
+            }
         }
     }
-
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        return base.OnAfterRenderAsync(firstRender);
+    }
     private async Task SaveUser()
     {
-        // if (viewModel != null && UserId != null)
-        // {
-        //     if (viewModel.IsDeleted != userActiveStatus)
-        //     {
+        if (viewModel != null && UserId != null)
+        {
+            if (viewModel.IsDeleted != userActiveStatus)
+            {
                 // Call DeleteUserUseCase to delete the user
-            //     var isSuccess = await ToggleUserStatusUseCase.ExecuteAsync(Guid.Parse(UserId));
-            //     if (isSuccess)
-            //     {
-            //         // Handle successful deletion (e.g., display a success message)
-            //     }
-            //     else
-            //     {
-            //         // Handle deletion failure (e.g., display an error message)
-            //     }
-            // }
-            // var success = await UpdateUserClaimsUseCase.ExecuteAsync(UserId, "Permission", viewModel.SelectedPermissions);
-            // if (success)
-            // {
-            //     NavigationManager.NavigateTo("/account/manageusers");
-            // }
-            // else
-            // {
-            //     // Handle error
-            // }
-        // }
+                var toggleUserStatusResult = await ToggleUserStatusUseCase.ExecuteAsync(Guid.Parse(UserId));
+                if (toggleUserStatusResult.IsSuccess)
+                {
+                    message = "User status updated successfully";
+                }
+                else
+                {
+                    message = "Failed to update user status";
+                }
+            }
+            var updateUserClaimsResult = await UpdateUserClaimsUseCase.ExecuteAsync(UserId, "Permission", viewModel.SelectedPermissions);
+            if (updateUserClaimsResult.IsSuccess)
+            {
+                NavigationManager.NavigateTo("/useraccount/manageusers");
+            }
+            else
+            {
+                message = "Failed to update user claims";
+            }
+        }
     }
     private void TogglePermission(string permission, bool isSelected)
     {

@@ -3,6 +3,7 @@ using BulkMailSender.Application.Interfaces.User;
 using BulkMailSender.Domain.Entities.Identity;
 using BulkMailSender.Infrastructure.Common.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
     public class SqlServerUserRepository : IUserRepository {
@@ -31,8 +32,12 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             return Result.Failure(identityResult.Errors.Select(e => e.Description).ToArray());
         }
 
-        public Task<List<User>> GetAllUsersAsync() {
-            throw new NotImplementedException();
+        public async Task<List<User>> GetAllUsersAsync() {
+            var applicationUsers = await _userManager.Users.ToListAsync();
+            if (!applicationUsers.Any()) {
+                return new List<User>(); // Return an empty list if no users are found
+            }
+            return applicationUsers.Select(u => _mapper.Map<User>(u)).ToList();
         }
 
         public async Task<User?> GetUserByEmailAsync(string email) {
@@ -73,8 +78,19 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             }
             return Result.Failure(createResult.Errors.Select(e => e.Description).ToArray());
         }
-        public Task<Result> ToggleUserActiveStatusAsync(Guid userId) {
-            throw new NotImplementedException();
+        public async Task<Result> ToggleUserActiveStatusAsync(Guid userId) {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) {
+                return Result.Failure("User not found. Please check the provided user ID.");
+            }
+            try {
+                user.IsActive = !user.IsActive; // Toggle the active state
+                await _userManager.UpdateAsync(user);
+                return Result.Success();
+            }
+            catch (Exception) {
+                return Result.Failure("An error occurred while updating the user's active status. Please try again later.");
+            }
         }
     }
 }

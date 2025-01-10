@@ -90,6 +90,10 @@ builder.Services.AddTransient<IResendEmailConfirmationUseCase, ResendEmailConfir
 builder.Services.AddTransient<IChangePasswordUseCase, ChangePasswordUseCase>();
 builder.Services.AddTransient<ICheckUserHasPasswordUseCase, CheckUserHasPasswordUseCase>();
 builder.Services.AddTransient<ISetPasswordUseCase, SetPasswordUseCase>();
+builder.Services.AddTransient<IGetUsersUseCase, GetUsersUseCase>();
+builder.Services.AddTransient<IUpdateUserClaimsUseCase, UpdateUserClaimsUseCase>();
+builder.Services.AddTransient<IToggleUserStatusUseCase, ToggleUserStatusUseCase>();
+builder.Services.AddTransient<IGetUserWithClaimsUseCase, GetUserWithClaimsUseCase>();
 
 
 

@@ -43,6 +43,11 @@ namespace BulkMailSender.Application.Mappings {
             // Optional: Configure mapping from User to UserDto (if needed)
             CreateMap<User, UserDto>();
 
+            CreateMap<Claim, System.Security.Claims.Claim>()
+             .ConstructUsing(src => new System.Security.Claims.Claim(src.Type, src.Value));
+            CreateMap<System.Security.Claims.Claim,Claim>()
+              .ConstructUsing(src => new Claim(src.Type, src.Value));
+
             CreateMap<Result, ResultDto>();
             CreateMap<ResultDto, Result>();
         }
