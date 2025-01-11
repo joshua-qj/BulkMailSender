@@ -60,6 +60,7 @@ namespace BulkMailSender.Infrastructure.Mappings {
                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Username))
                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
                .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.PasswordHash))
+               .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => src.EmailConfirmed))
                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive));
 
             // Map from ApplicationUser to Domain User

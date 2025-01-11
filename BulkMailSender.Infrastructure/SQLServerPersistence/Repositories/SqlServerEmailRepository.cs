@@ -22,16 +22,23 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             _mapper = mapper;
             _requesterConfigurations = new Dictionary<Guid, Requester>();
         }
-        public Task<Attachment> FindOrAddAttachmentAsync(Attachment attachment) {
-            throw new NotImplementedException();
-        }
 
-        public Task<InlineResource> FindOrAddInlineResourceAsync(InlineResource inlineResource) {
-            throw new NotImplementedException();
-        }
+        public IQueryable<JobSummaryDto> GetJobSummaries(Guid userId) {
+            return _dbContext.Emails
+    .Where(email => email.UserId == userId && email.BatchId != null)
+    .GroupBy(email => email.BatchId)
+    .Select(group => new JobSummaryDto {
+        EmailId = group.First().Id,
+        BatchId = group.Key,
+        Date = group.Min(email => email.RequestedDate) ?? DateTime.MinValue,
+        EmailFrom = group.First().EmailFrom,
+        Subject = group.First().Subject,
+        TotalEmailsSent = group.Count(),
+        SuccessfulEmails = group.Count(email => email.StatusId == 2),
+        FailedEmails = group.Count(email => email.StatusId == 3),
+        PendingEmails = group.Count(email => email.StatusId == 1)
+    });
 
-        public IQueryable<JobSummary> GetGroupedEmails(Guid userId) {
-            throw new NotImplementedException();
         }
 
         public async Task<Requester> GetRequesterByIdAsync(Guid requesterId) {

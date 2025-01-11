@@ -1,8 +1,7 @@
-﻿namespace BulkMailSender.Domain.Entities.Email {
-    public class JobSummary
-    {
-        public Guid? BatchId { get; set; }
+﻿namespace BulkMailSender.Application.Dtos {
+    public class JobSummaryDto {
         public Guid EmailId { get; set; }
+        public Guid? BatchId { get; set; }
         public DateTime Date { get; set; }
         public string EmailFrom { get; set; }
         public string Subject { get; set; }

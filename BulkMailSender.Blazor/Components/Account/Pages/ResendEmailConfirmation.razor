@@ -47,6 +47,11 @@
             message = "Verification email sent. Please check your email.";
             return;
         }
+        if (user.EmailConfirmed ==true)
+        {
+            message = "Verification email sent. Please check your email.";
+            return;
+        }
 
         var baseUri = NavigationManager.BaseUri;
         var result = await ResendEmailConfirmationUseCase.ExecuteAsync(user, baseUri);

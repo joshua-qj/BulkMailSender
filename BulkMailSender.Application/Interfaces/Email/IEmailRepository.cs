@@ -6,8 +6,9 @@ namespace BulkMailSender.Application.Interfaces.Email {
         Task<Requester> GetRequesterByIdAsync(Guid requesterId);
         Task LoadRequesterConfigurationsAsync();
         Task<Requester> GetRequesterByNameAsync(string hostName);
-        IQueryable<JobSummary> GetGroupedEmails(Guid userId);
+ 
         Task UpdateEmailStatusAsync(Domain.Entities.Email.Email email, string? errorMessage);
+        IQueryable<JobSummaryDto> GetJobSummaries(Guid userId);
     }
 }
 /*Repositories are focused on persisting and retrieving domain models.

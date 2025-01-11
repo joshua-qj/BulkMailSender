@@ -34,8 +34,8 @@ namespace BulkMailSender.Application.UseCases.Identity {
         }
 
         public async Task<ResultDto> ExecuteAsync(string email, string baseUrl) {
-            var user = await _userRepository.GetUserByUsernameAsync(email);
-            if (user == null) {
+            User user = await _userRepository.GetUserByUsernameAsync(email);
+            if (user == null || user.IsActive == false) {
                 return ResultDto.Failure("User not found.");
             }
             Result confirmResult = await _authRepository.IsEmailConfirmedAsync(user.Id);
@@ -62,7 +62,7 @@ namespace BulkMailSender.Application.UseCases.Identity {
                     Id = Guid.NewGuid(),
                     EmailTo = email,
                     Subject = "Reset your GroupEmail password",
-                    Body = $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(resetLink)}'>clicking here</a>.",
+                    Body = $"\t\t\r\nDear user,\r\n\r\n <br/> We have received a request to reset your password via {user.Email},Please reset your password by <a href='{HtmlEncoder.Default.Encode(resetLink)}'>clicking here</a>. <br/> If you did not request reset password, it is possible that someone else is trying to access the account {user.Email}. Do not forward or give this code to anyone.",
                     IsBodyHtml = true,
                     RequestedDate = DateTime.UtcNow,
                     RequesterID = Guid.Parse("a6e9e69e-3af3-43c3-a6e9-775f751f3659"),

@@ -47,7 +47,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                 return null;
             }
             return applicationUser == null ? null : _mapper.Map<User>(applicationUser);
-    }
+        }
         public async Task<User?> GetUserByIdAsync(Guid userId) {
             if (userId == Guid.Empty) {
                 return null;
@@ -91,6 +91,18 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             catch (Exception) {
                 return Result.Failure("An error occurred while updating the user's active status. Please try again later.");
             }
+        }
+
+        public async Task<Result> UpdateUserAsync(User user) {
+
+            var applicationUser = await _userManager.FindByIdAsync(user.Id.ToString());
+            if (applicationUser == null) {
+                return Result.Failure("User not found.");
+            }
+            _mapper.Map(user, applicationUser);
+
+            IdentityResult result = await _userManager.UpdateAsync(applicationUser);
+            return result.Succeeded ? Result.Success() : Result.Failure("Failed to update user.");
         }
     }
 }

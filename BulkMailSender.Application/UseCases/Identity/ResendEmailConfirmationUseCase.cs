@@ -50,7 +50,7 @@ namespace BulkMailSender.Application.UseCases.Identity {
                 Id = Guid.NewGuid(),
                 EmailTo = user.Email,
                 Subject = "Confirm your GroupEmail register email",
-                Body = $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(confirmationLink)}'>clicking here</a>.",
+                Body = $"\t\t\r\nDear user,\r\n\r\n <br/> We have received a request to resend a confirmation email via {user.Email}, Please confirm your account by <a href='{HtmlEncoder.Default.Encode(confirmationLink)}'>clicking here</a>. <br/> If you did not request this code, it is possible that someone else is trying to access the account {user.Email}. Do not forward or give this code to anyone.",
                 IsBodyHtml = true,
                 RequestedDate = DateTime.UtcNow,
                 RequesterID = Guid.Parse("a6e9e69e-3af3-43c3-a6e9-775f751f3659"),

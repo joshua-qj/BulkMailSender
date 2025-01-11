@@ -9,6 +9,7 @@ namespace BulkMailSender.Application.Interfaces.User {
         Task<Domain.Entities.Identity.User?> GetUserByUsernameAsync(string username);
         Task<Result> ConfirmEmailAsync(Guid userId, string token);
         Task<Result> RegisterUserAsync(Domain.Entities.Identity.User user, string password);
-        Task<Result> ToggleUserActiveStatusAsync(Guid userId);
+        Task<Result> ToggleUserActiveStatusAsync(Guid userId); // This method is not used in the application
+        Task<Result> UpdateUserAsync(Domain.Entities.Identity.User user);
     }
 }

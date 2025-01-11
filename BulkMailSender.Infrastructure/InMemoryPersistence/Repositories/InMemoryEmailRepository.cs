@@ -12,7 +12,7 @@ namespace BulkMailSender.Infrastructure.InMemoryPersistence.Repositories {
             throw new NotImplementedException();
         }
 
-        public IQueryable<JobSummary> GetGroupedEmails(Guid userId) {
+        public IQueryable<JobSummaryDto> GetJobSummaries(Guid userId) {
             throw new NotImplementedException();
         }
 
