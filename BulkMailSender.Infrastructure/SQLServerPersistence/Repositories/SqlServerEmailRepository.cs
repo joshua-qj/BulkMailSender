@@ -23,6 +23,29 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             _requesterConfigurations = new Dictionary<Guid, Requester>();
         }
 
+        public async Task<Email?> GetEmailByIdAsync(Guid emailId) {
+            if (emailId == Guid.Empty)
+                return null;
+            using var dbContext = _contextFactory.CreateDbContext();
+
+            var emailEntity = await dbContext
+                .Emails.AsNoTracking()
+                .Include(email => email.EmailAttachments)
+                    .ThenInclude(emailAttachment => emailAttachment.Attachment)
+                .Include(email => email.EmailInlineResources)
+                    .ThenInclude(emaiInlineResources => emaiInlineResources.InlineResource)
+                .FirstOrDefaultAsync(email => email.Id == emailId);
+
+            try {
+                return _mapper.Map<Email>(emailEntity);
+            }
+            catch (Exception ex) {
+
+                throw ex;
+            }
+
+        }
+
         public IQueryable<JobSummaryDto> GetJobSummaries(Guid userId) {
             return _dbContext.Emails
     .Where(email => email.UserId == userId && email.BatchId != null)

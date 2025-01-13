@@ -9,6 +9,7 @@ namespace BulkMailSender.Application.Interfaces.Email {
  
         Task UpdateEmailStatusAsync(Domain.Entities.Email.Email email, string? errorMessage);
         IQueryable<JobSummaryDto> GetJobSummaries(Guid userId);
+        Task<Domain.Entities.Email.Email?> GetEmailByIdAsync(Guid emailId);
     }
 }
 /*Repositories are focused on persisting and retrieving domain models.

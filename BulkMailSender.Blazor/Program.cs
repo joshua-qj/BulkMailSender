@@ -4,6 +4,10 @@ using BulkMailSender.Application.Interfaces.User;
 using BulkMailSender.Application.Mappings;
 using BulkMailSender.Application.UseCases.Email.ComposeEmailScreen;
 using BulkMailSender.Application.UseCases.Email.ComposeEmailScreen.interfaces;
+using BulkMailSender.Application.UseCases.Email.EmailJobSummaryScreen;
+using BulkMailSender.Application.UseCases.Email.EmailJobSummaryScreen.interfaces;
+using BulkMailSender.Application.UseCases.Email.ViewEmailScreen;
+using BulkMailSender.Application.UseCases.Email.ViewEmailScreen.Interfaces;
 using BulkMailSender.Application.UseCases.Identity;
 using BulkMailSender.Application.UseCases.Identity.interfaces;
 using BulkMailSender.Blazor.Components;
@@ -94,6 +98,8 @@ builder.Services.AddTransient<IGetUsersUseCase, GetUsersUseCase>();
 builder.Services.AddTransient<IUpdateUserClaimsUseCase, UpdateUserClaimsUseCase>();
 builder.Services.AddTransient<IToggleUserStatusUseCase, ToggleUserStatusUseCase>();
 builder.Services.AddTransient<IGetUserWithClaimsUseCase, GetUserWithClaimsUseCase>();
+builder.Services.AddTransient<IGetJobSummariesUseCase, GetJobSummariesUseCase>();
+builder.Services.AddTransient<IGetEmailByIdUseCase, GetEmailByIdUseCase>();
 
 
 

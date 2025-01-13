@@ -178,7 +178,7 @@
 
 @if (isSendingEmails == true && StatusMessageViewModelService.CurrentStatus.IsError is false && _batchId != Guid.Empty)
 {
-    <EmailStatus BatchId="@_batchId" Total="@emailCount"></EmailStatus>
+    <EmailStatusComponent BatchId="@_batchId" Total="@emailCount"></EmailStatusComponent>
 }
 
 @code
@@ -199,7 +199,7 @@
     private List<ExcelImportDto> excelDtos = new();
     public string? testRecipientEmail { get; set; }
     private int emailCount;
-    private string currentUserId;
+    private string? currentUserId;
     private Guid _requesterID;
     private Guid _batchId = Guid.NewGuid();
 
@@ -218,17 +218,17 @@
     // private EmailSendingSettings settings;
 
     protected override async Task OnInitializedAsync()
-    {    // Fetch the current user's ID from the authentication state
+    {   
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         // Retrieve the settings from IOptionsSnapshot
         // settings = EmailSettings.Value;
         if (user.Identity?.IsAuthenticated ?? false)
         {
-            //     currentUserId = user.FindFirst("user_id")?.Value; // or "user_id" based on your identity provider's claim type
             currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value; // or "user_id" based on your identity provider's claim type
         }
         // Clear emails and set up edit context
+        StatusMessageViewModelService.ResetStatusMessage();
         emailDtos.Clear();
         if (string.IsNullOrWhiteSpace(EmailFrom))
         {
@@ -339,6 +339,7 @@
 
             // Set additional properties
             email.RequesterID = _requesterID;
+            email.UserId = string.IsNullOrEmpty(currentUserId) ? Guid.Empty : new Guid(currentUserId);
             email.Body = email.Body.Replace("{name}", "Test Recipient");
             email.EmailTo = emailViewModel.TestRecipientEmail; // Set the test recipient email
             emailBatch.Add(email);
@@ -417,7 +418,7 @@
         }
         finally
         {
-            if (excelDtos.Count !>0)
+            if (!excelDtos.Any())
             {
                 StatusMessageViewModelService.SetErrorMessage($"Uploaded file does not contain any email addresses.");
             }
@@ -515,6 +516,7 @@
                 // Set additional properties
                 email.RequesterID = _requesterID;
                 email.BatchID = _batchId;
+                email.UserId = string.IsNullOrEmpty(currentUserId) ? Guid.Empty : new Guid(currentUserId);
                 email.Body = email.Body.Replace("{name}", email.DisplayName);
                 batch.Add(email);
                 var inlineResourceIdsInBody = EmailProcessingService.ExtractInlineResourceIds(emailViewModel.Body);

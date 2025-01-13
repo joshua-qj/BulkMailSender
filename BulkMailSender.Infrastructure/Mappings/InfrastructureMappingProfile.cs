@@ -12,18 +12,28 @@ namespace BulkMailSender.Infrastructure.Mappings {
     public class InfrastructureMappingProfile : Profile {
         public InfrastructureMappingProfile() {
             CreateMap<Email, EmailEntity>()
-    .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => src.EmailFrom.Value))
-    .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => src.EmailTo.Value))
-    .ForMember(dest => dest.EmailAttachments, opt => opt.Ignore())
-    .ReverseMap() // Infrastructure to Domain Mapping
-    .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => new EmailAddress(src.EmailFrom)))
-    .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => new EmailAddress(src.EmailTo)))
-  .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId)); // Direct StatusId mapping
+                .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => src.EmailFrom.Value))
+                .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => src.EmailTo.Value))
+                .ForMember(dest => dest.EmailInlineResources, opt => opt.Ignore())
+                .ForMember(dest => dest.EmailAttachments, opt => opt.Ignore());
+
 
             CreateMap<Attachment, AttachmentEntity>();
             CreateMap<InlineResource, InlineResourceEntity>();
 
- 
+            CreateMap<EmailEntity, Email>()
+                .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => new EmailAddress(src.EmailFrom)))
+                .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => new EmailAddress(src.EmailTo)))
+                .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src =>
+                    src.EmailAttachments.Select(ea => ea.Attachment))) // Map through intermediate table
+                .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src =>
+                    src.EmailInlineResources.Select(eir => eir.InlineResource)));
+
+
+            CreateMap<AttachmentEntity, Attachment>();
+            CreateMap<InlineResourceEntity, InlineResource>();
+
+
             // Map from RequesterEntity to Requester (Domain Model)
             CreateMap<RequesterEntity, Requester>()
                 .ConstructUsing(src => new Requester(src.LoginName, src.Password, new MailServer(

@@ -25,7 +25,8 @@ namespace BulkMailSender.Application.Mappings {
                 .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => src.EmailFrom.Value))
                 .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => src.EmailTo.Value))
                 .ForMember(dest => dest.StatusId, opt => opt.MapFrom(src => src.StatusId))
-                .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources));
+                .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources))
+                .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments));
 
 
             CreateMap<Attachment, AttachmentDto>().ReverseMap(); 

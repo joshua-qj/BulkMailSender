@@ -23,7 +23,6 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null) {
                 return Result.Failure("User not found.");
-                throw new InvalidOperationException("User not found.");
             }
             IdentityResult identityResult = await _userManager.ConfirmEmailAsync(user, token);
             if (identityResult.Succeeded) {
@@ -101,7 +100,7 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
             }
             _mapper.Map(user, applicationUser);
 
-            IdentityResult result = await _userManager.UpdateAsync(applicationUser);
+            var result = await _userManager.UpdateAsync(applicationUser);
             return result.Succeeded ? Result.Success() : Result.Failure("Failed to update user.");
         }
     }

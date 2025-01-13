@@ -69,6 +69,24 @@ namespace BulkMailSender.Blazor.Mappings {
              //   .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.PasswordHash))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive));
 
+
+            // Map EmailDto to EmailViewModel
+            CreateMap<EmailDto, EmailViewModel>()
+                .ForMember(dest => dest.TestRecipientEmail, opt => opt.Ignore()) // Ignore if not used
+                .ForMember(dest => dest.IsBodyHtml, opt => opt.MapFrom(src => src.IsBodyHtml ?? false)) // Handle nullable bool
+                .ForMember(dest => dest.Requester, opt => opt.MapFrom(src => src.Requester)) // Map Requester
+                .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src => src.Attachments))
+                .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src => src.InlineResources));
+
+            // Map RequesterDto to RequesterViewModel
+            CreateMap<RequesterDto, RequesterViewModel>();
+
+            // Map AttachmentDto to AttachmentViewModel
+            CreateMap<AttachmentDto, AttachmentViewModel>();
+
+            // Map InlineResourceDto to InlineResourceViewModel
+            CreateMap<InlineResourceDto, InlineResourceViewModel>();
+
         }
     }
 }

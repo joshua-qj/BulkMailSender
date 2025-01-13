@@ -1,8 +1,6 @@
 ﻿@page "/emailjobsummary/{userId:guid}"
-@using BulkMailSender.Application.UseCases.Email.EmailJobSummaryScreen.interfaces
-@using Microsoft.AspNetCore.Components.QuickGrid
-@using Microsoft.EntityFrameworkCore
-@rendermode InteractiveServer
+
+
 @attribute [Authorize(Policy = "CanAccessEmailSending")]
 @inject IGetJobSummariesUseCase GetJobSummariesUseCase
 @inject NavigationManager Navigation
@@ -11,27 +9,27 @@
     <h3 class="my-1">Email Job Summary</h3>
 </header>
 
-<div class="container-fluid px-4">
-    <div class="table-responsive">
+<div class="container-fluid px-0">
+    <div class="table-responsive col">
         <QuickGrid TGridItem="JobSummaryViewModel" ItemsProvider="@LoadJobSummariesAsync" Pagination="@pagination" class="table table-bordered table-striped table-hover w-100">
             <PropertyColumn Title="Date" Property="@(summary => summary.Date.ToLocalTime().ToString("g"))" Sortable="true" />
             <PropertyColumn Title="Email From" Property="@(summary => summary.EmailFrom)" Sortable="true" />
-            <PropertyColumn Title="Subject" Property="@(summary => summary.Subject)" Sortable="true" />
-            <PropertyColumn Title="Total Sent" Property="@(summary => summary.TotalEmailsSent)" />
+            <PropertyColumn Title="Subject" Property="@(summary => summary.Subject)" Sortable="true"  />
+            <PropertyColumn Title="Total Sent" Property="@(summary => summary.TotalEmailsSent)"  />
             <PropertyColumn Title="Successful" Property="@(summary => summary.SuccessfulEmails)" />
-            <PropertyColumn Title="Failed" Property="@(summary => summary.FailedEmails)" />
-            <PropertyColumn Title="Pending" Property="@(summary => summary.PendingEmails)" />        
-         
+            <PropertyColumn Title="Failed" Property="@(summary => summary.FailedEmails)"  />
+@*             <PropertyColumn Title="Pending" Property="@(summary => summary.PendingEmails)" />    *@     
+
     <TemplateColumn Title="Action">
-           <div>
-            @if (context.EmailId != Guid.Empty)
-            {
+                <div>
+                    @if (context.EmailId != Guid.Empty)
+                    {
                         <a class="btn btn-sm btn-outline-primary" role="button" @onclick="() => NavigateToEmailDetail(context.EmailId)">
                             View Email
                         </a>
-            }
+                    }
                 </div>
-    </TemplateColumn>
+            </TemplateColumn>
 
         </QuickGrid>
     </div>
@@ -42,7 +40,7 @@
     </div>
 </div>
 
- @if (jobSummaries == null)
+@if (jobSummaries == null)
 {
     <div class="text-center">
         <p>Loading...</p>
@@ -54,91 +52,94 @@
 @code {
     [Parameter]
     public Guid UserId { get; set; }
+    int itemsPerPage = 0;
     SortDirection currentSortDirection = SortDirection.Descending; // Default sort direction
 
     string? currentSortColumn = "Date"; // Default sort column
 
 
-    private IQueryable<JobSummaryViewModel> jobSummaries;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 15 };
-    private int numResults;
-    // GridItemsProvider for loading job summaries
-    private GridItemsProvider<JobSummaryViewModel>? LoadJobSummariesAsync;
-    protected override async void OnInitialized()
+    private IQueryable<JobSummaryViewModel> jobSummaries = Enumerable.Empty<JobSummaryViewModel>().AsQueryable();
+    PaginationState pagination = new PaginationState();
+    private GridItemsProvider<JobSummaryViewModel> LoadJobSummariesAsync = _ =>
+    ValueTask.FromResult(GridItemsProviderResult.From(new List<JobSummaryViewModel>(), 0));
+
+    // private GridItemsProvider<JobSummaryViewModel>? LoadJobSummariesAsync;
+    protected override async Task OnInitializedAsync()
     {
-   LoadJobSummariesAsync = async req =>
-             {
-                 // Fetch data using the use case, which returns domain models (JobSummary)
-                 var query = GetJobSummariesUseCase.Execute(UserId);
+        await base.OnInitializedAsync();
+        LoadJobSummariesAsync = async req =>
+        {
+            try
+            {
+                var query = GetJobSummariesUseCase.Execute(UserId);
 
-                 // Manage sorting
-                 if (req.SortByColumn != null)
-                 {
-                     var sortProperty = req.SortByColumn.Title;
+                if (req.SortByColumn != null)
+                {
+                    var sortProperty = req.SortByColumn.Title;
 
-                     // Toggle sort direction if the same column is clicked again
-                     if (currentSortColumn == sortProperty)
-                     {
-                         currentSortDirection = currentSortDirection == SortDirection.Ascending
-                     ? SortDirection.Descending
-                     : SortDirection.Ascending;
-                     }
-                     else
-                     {
-                         // Reset to ascending for new column
-                         currentSortColumn = sortProperty;
-                         currentSortDirection = SortDirection.Ascending;
-                     }
-                     sortProperty = req.SortByColumn.Title;
+                    if (currentSortColumn == sortProperty)
+                    {
+                        currentSortDirection = currentSortDirection == SortDirection.Ascending
+                            ? SortDirection.Descending
+                            : SortDirection.Ascending;
+                    }
+                    else
+                    {
+                        currentSortColumn = sortProperty;
+                        currentSortDirection = SortDirection.Ascending;
+                    }
 
-                     query = sortProperty switch
-                     {
-                         "Date" => currentSortDirection == SortDirection.Ascending
-                             ? query.OrderBy(item => item.Date)
-                             : query.OrderByDescending(item => item.Date),
-                         "Email From" => currentSortDirection == SortDirection.Ascending
-                             ? query.OrderBy(item => item.EmailFrom)
-                             : query.OrderByDescending(item => item.EmailFrom),
-                         "Subject" => currentSortDirection == SortDirection.Ascending
-                             ? query.OrderBy(item => item.Subject)
-                             : query.OrderByDescending(item => item.Subject),
-                         _ => query
-                     };
-                 }
-                 else
-                 {
-                     // Default sorting by Date descending
-                     query = query.OrderByDescending(item => item.Date);
-                 }
+                    query = sortProperty switch
+                    {
+                        "Date" => currentSortDirection == SortDirection.Ascending
+                            ? query.OrderBy(item => item.Date)
+                            : query.OrderByDescending(item => item.Date),
+                        "Email From" => currentSortDirection == SortDirection.Ascending
+                            ? query.OrderBy(item => item.EmailFrom)
+                            : query.OrderByDescending(item => item.EmailFrom),
+                        "Subject" => currentSortDirection == SortDirection.Ascending
+                            ? query.OrderBy(item => item.Subject)
+                            : query.OrderByDescending(item => item.Subject),
+                        _ => query
+                    };
+                }
+                else
+                {
+                    query = query.OrderByDescending(item => item.Date);
+                }
 
-                 // Apply pagination
-                 var totalItemCount = await query.CountAsync(req.CancellationToken);
-                 var items = await query
-                     .Skip(req.StartIndex)
-                     .Take(req.Count ?? 5)
-                     .ToListAsync(req.CancellationToken);
+                var totalItemCount = await query.CountAsync(req.CancellationToken);
+                pagination.ItemsPerPage = totalItemCount > 8 ? 8 : totalItemCount;
 
-                 // Convert domain models (JobSummary) to view models (JobSummaryViewModel)
-                 var viewModels = items.Select(item => new JobSummaryViewModel
-                     {
-                         EmailId = item.EmailId,
-                         BatchId = item.BatchId,
-                         Date = item.Date,
-                         EmailFrom = item.EmailFrom,
-                         Subject = item.Subject,
-                         TotalEmailsSent = item.TotalEmailsSent,
-                         SuccessfulEmails = item.SuccessfulEmails,
-                         FailedEmails = item.FailedEmails,
-                         PendingEmails = item.PendingEmails
-                     }).ToList();
+                var items = await query
+                    .Skip(req.StartIndex)
+                    .Take(req.Count ?? 5)
+                    .ToListAsync(req.CancellationToken);
 
-                 return GridItemsProviderResult.From(viewModels, totalItemCount);
-             };
+                var viewModels = items.Select(item => new JobSummaryViewModel
+                    {
+                        EmailId = item.EmailId,
+                        BatchId = item.BatchId,
+                        Date = item.Date,
+                        EmailFrom = item.EmailFrom,
+                        Subject = item.Subject,
+                        TotalEmailsSent = item.TotalEmailsSent,
+                        SuccessfulEmails = item.SuccessfulEmails,
+                        FailedEmails = item.FailedEmails,
+                        PendingEmails = item.PendingEmails
+                    }).ToList();
+
+                return GridItemsProviderResult.From(viewModels, totalItemCount);
+            }
+            catch (Exception)
+            {
+                return GridItemsProviderResult.From(new List<JobSummaryViewModel>(), 0);
+            }
+        };
 
     }
     private void NavigateToEmailDetail(Guid? emailId)
     {
-        // Navigate to the view email page with the emailId as a parameter
         Navigation.NavigateTo($"/viewemail/{emailId}");
     }
 }
