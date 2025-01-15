@@ -1,7 +1,7 @@
 ﻿@page "/emailjobsummary/{userId:guid}"
 
 
-@attribute [Authorize(Policy = "CanAccessEmailSending")]
+@* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
 @inject IGetJobSummariesUseCase GetJobSummariesUseCase
 @inject NavigationManager Navigation
 
@@ -18,9 +18,9 @@
             <PropertyColumn Title="Total Sent" Property="@(summary => summary.TotalEmailsSent)"  />
             <PropertyColumn Title="Successful" Property="@(summary => summary.SuccessfulEmails)" />
             <PropertyColumn Title="Failed" Property="@(summary => summary.FailedEmails)"  />
-@*             <PropertyColumn Title="Pending" Property="@(summary => summary.PendingEmails)" />    *@     
+            @*             <PropertyColumn Title="Pending" Property="@(summary => summary.PendingEmails)" />    *@     
 
-    <TemplateColumn Title="Action">
+            <TemplateColumn Title="Action">
                 <div>
                     @if (context.EmailId != Guid.Empty)
                     {
@@ -109,8 +109,11 @@
                 }
 
                 var totalItemCount = await query.CountAsync(req.CancellationToken);
+                if (totalItemCount == 0){        
+                    pagination.ItemsPerPage = 1;
+                }else{
                 pagination.ItemsPerPage = totalItemCount > 8 ? 8 : totalItemCount;
-
+                }
                 var items = await query
                     .Skip(req.StartIndex)
                     .Take(req.Count ?? 5)

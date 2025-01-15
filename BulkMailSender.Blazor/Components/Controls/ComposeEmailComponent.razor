@@ -260,7 +260,7 @@
 
         }
     }
-    private async Task RemoveAttachment(AttachmentViewModel file)
+    private void RemoveAttachment(AttachmentViewModel file)
     {
         if (emailViewModel.Attachments == null || !emailViewModel.Attachments.Contains(file))
         {

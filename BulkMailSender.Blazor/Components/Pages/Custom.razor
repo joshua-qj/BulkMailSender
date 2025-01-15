@@ -1,6 +1,6 @@
 ﻿@page "/custom"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = "CanAccessEmailSending")]
+@* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
 
 <h3 class="my-1  center-content">Custom email</h3>
 <ComposeEmailComponent EmailFrom="Citizen Jane <joshua.qj@hotmail.com>" RequesterLoginName="joshua.qj@hotmail.com"

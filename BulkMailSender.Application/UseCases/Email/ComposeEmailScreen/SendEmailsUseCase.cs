@@ -36,6 +36,10 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
 
                     try {
                         var requester = await _emailRepository.GetRequesterByIdAsync(emailDto.RequesterID);
+                        if (requester is null) {
+                            errorMessage = "Cannot find requester.";
+                            return; 
+                        }
                         email.SetRequester(requester);
                     }
                     catch (Exception requesterEx) {

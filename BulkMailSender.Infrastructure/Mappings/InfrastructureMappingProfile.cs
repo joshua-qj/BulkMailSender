@@ -24,6 +24,7 @@ namespace BulkMailSender.Infrastructure.Mappings {
             CreateMap<EmailEntity, Email>()
                 .ForMember(dest => dest.EmailFrom, opt => opt.MapFrom(src => new EmailAddress(src.EmailFrom)))
                 .ForMember(dest => dest.EmailTo, opt => opt.MapFrom(src => new EmailAddress(src.EmailTo)))
+                       .ForMember(dest => dest.Requester, opt => opt.Ignore())
                 .ForMember(dest => dest.Attachments, opt => opt.MapFrom(src =>
                     src.EmailAttachments.Select(ea => ea.Attachment))) // Map through intermediate table
                 .ForMember(dest => dest.InlineResources, opt => opt.MapFrom(src =>
