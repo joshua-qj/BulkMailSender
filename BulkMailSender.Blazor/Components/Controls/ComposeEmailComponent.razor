@@ -299,7 +299,7 @@
                     .Where(ir => inlineResourceIdsInBody.Contains(ir.Id.ToString()))
                     .ToList();
             }
-            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 2))
+            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 20))
             {
                 await SendEmailsUseCase.ExecuteAsync(emailBatch);
 

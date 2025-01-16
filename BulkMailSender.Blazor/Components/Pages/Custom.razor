@@ -1,9 +1,9 @@
 ﻿@page "/custom"
 @rendermode InteractiveServer
 @* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
-
+@* "Citizen Jane <joshua.qj@hotmail.com>" *@
 <h3 class="my-1  center-content">Custom email</h3>
-<ComposeEmailComponent EmailFrom="Citizen Jane <joshua.qj@hotmail.com>" RequesterLoginName="joshua.qj@hotmail.com"
+<ComposeEmailComponent EmailFrom="joshua.qj@hotmail.com" RequesterLoginName="joshua.qj@hotmail.com"
               Body=@(new MarkupString(@"
               <p>Dear {name},</p>
               <p>&nbsp;</p>

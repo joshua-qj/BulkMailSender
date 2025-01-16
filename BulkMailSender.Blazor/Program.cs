@@ -149,7 +149,8 @@ builder.Services.AddTransient<IReadFileAsBytesUseCase, ReadFileAsBytesUseCase>()
 builder.Services.AddTransient<IReadFileAsBytesService, ReadFileAsBytesService>();
 
 // send email
-builder.Services.AddTransient<IEmailSenderService, SmtpEmailSenderService>();
+//builder.Services.AddTransient<IEmailSenderService, DotNetSmtpEmailSenderService>();
+builder.Services.AddTransient<IEmailSenderService, MailKitEmailSenderService>();
 builder.Services.AddTransient<ISendEmailsUseCase, SendEmailsUseCase>();
 builder.Services.AddTransient<ISaveEmailUseCase, SaveEmailUseCase>();
 builder.Services.AddTransient<IUpdateEmailStatusUseCase, UpdateEmailStatusUseCase>();
