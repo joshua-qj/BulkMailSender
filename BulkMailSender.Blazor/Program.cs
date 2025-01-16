@@ -22,8 +22,6 @@ using BulkMailSender.Infrastructure.Mappings;
 using BulkMailSender.Infrastructure.Services;
 using BulkMailSender.Infrastructure.SQLServerPersistence.Contexts;
 using BulkMailSender.Infrastructure.SQLServerPersistence.Repositories;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,7 +54,8 @@ builder.Services.AddAutoMapper(typeof(InfrastructureMappingProfile));
 builder.Services.AddAutoMapper(typeof(ApplicationMappingProfile));
 
 
-
+/*
+//below is for in memory database
 
 builder.Services.AddDbContext<ApplicationUserDbContext>(options =>
     options.UseInMemoryDatabase("InMemoryIdentityDbContext"));
@@ -70,18 +69,30 @@ builder.Services.AddDbContext<InMemoryDbContext>(options =>
 
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
+builder.Services.AddTransient<IEmailRepository, InMemoryEmailRepository>();
+
+builder.Services.AddTransient<IUserRepository, InMemoryUserRepository>();
+builder.Services.AddTransient<IAuthRepository, InMemoryAuthRepository>();
+
+*/
+
+//below is for sql server database
+
+builder.Services.AddDbContext<ApplicationUserDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection")));
 
 
-//builder.Services.AddDbContext<ApplicationUserDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection")));
+builder.Services.AddDbContextFactory<SqlServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("EmailConnection")), ServiceLifetime.Scoped);
 
+builder.Services.AddDbContext<SqlServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("EmailConnection")));
 
-//builder.Services.AddDbContextFactory<SqlServerDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("EmailConnection")), ServiceLifetime.Scoped);
+builder.Services.AddTransient<IEmailRepository, SqlServerEmailRepository>();
+builder.Services.AddTransient<IUserRepository, SqlServerUserRepository>();
+builder.Services.AddTransient<IAuthRepository, SqlServerAuthRepository>();
 
-//builder.Services.AddDbContext<SqlServerDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("EmailConnection")));
-
+// above is for sql server database
 builder.Services.AddAuthorization(options => {
     options.AddPolicy("Admin", policy => policy.RequireClaim("Permission", "Admin"));
     options.AddPolicy("CanAccessEmailSending", policy => policy.RequireClaim("Permission", "CanAccessEmailSending"));
@@ -97,10 +108,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders(); //these two are essetial for signin and user manager
 // Add repository
 
-builder.Services.AddTransient<IEmailRepository, InMemoryEmailRepository>();
 
-builder.Services.AddTransient<IUserRepository, InMemoryUserRepository>();
-builder.Services.AddTransient<IAuthRepository, InMemoryAuthRepository>();
 
 
 builder.Services.AddTransient<IGetRequesterByNameUseCase, GetRequesterByNameUseCase>();
@@ -153,7 +161,7 @@ builder.Services.AddScoped<StatusMessageViewModelService>();
 
 
 builder.Services.AddSignalR(options => {
-    options.MaximumReceiveMessageSize = 2 * 1024 * 1024; // 2 MB
+    options.MaximumReceiveMessageSize = 3 * 1024 * 1024; // 2 MB
     options.ClientTimeoutInterval = TimeSpan.FromMinutes(5);
     options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     options.KeepAliveInterval = TimeSpan.FromSeconds(10);
@@ -165,8 +173,16 @@ builder.Services.AddServerSideBlazor(options => {
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope()) {
-    var dbContext = scope.ServiceProvider.GetRequiredService<InMemoryDbContext>();
-    dbContext.Seed();
+    try {
+        var dbContext = scope.ServiceProvider.GetRequiredService<InMemoryDbContext>();
+        if (dbContext != null) {
+            dbContext.Seed();
+        }
+    }
+    catch (Exception) {
+
+    }
+
 }
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

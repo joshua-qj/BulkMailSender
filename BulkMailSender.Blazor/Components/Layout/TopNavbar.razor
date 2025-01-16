@@ -32,21 +32,21 @@
                         <NavLink class="nav-link" href="/xyz">XYZ </NavLink>
                     </li>
                 }
-                @if (true)
-              @*   @if (isAuthenticated) *@
+    @*             @if (true) *@
+                @if (isAuthenticated)
                 {
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/custom">Custom </NavLink>
                     </li>
                 }
-                @if (true)
-                @*   @if (isAuthenticated) *@
-                {
+                            @if (true)
+       @*          @if (isAuthenticated) *@
+                { 
                     <li class="nav-item">
-                        <NavLink class="nav-link" href="@jobSummaryUrl">Email Job Summary</NavLink>
+                        <NavLink class="nav-link" href="@jobSummaryUrl" Match="NavLinkMatch.All">Email Job Summary</NavLink>
                     </li>
 
-                }
+               } 
 
 
                 @if (isAuthenticated && isAdmin)
@@ -108,7 +108,7 @@
     private string collapseOrNot = "collapse";
     private string? currentUrl;
 
-    private string jobSummaryUrl;
+    private string jobSummaryUrl = string.Empty;
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
 
@@ -128,7 +128,7 @@
             if (Guid.TryParse(userIdClaim, out var parsedUserId))
             {
                 userId = parsedUserId;
-                jobSummaryUrl = $"/emailjobsummary/{userId}";
+                jobSummaryUrl = $"emailjobsummary/{userId}";
             }
         }
     }

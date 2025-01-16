@@ -153,9 +153,8 @@ window.initializeQuill = function (dotnetHelper) {
         reader.onload = async function (event) {
             try {
                 const base64Image = event.target.result.split(',')[1]; // Get only the base64 part
-                const imageId = await dotnetHelper.invokeMethodAsync('UploadImage', base64Image);
-                console.log('Image uploaded, ID:', imageId); // Debugging log
-
+                await dotnetHelper.invokeMethodAsync('UploadImage', base64Image,file.name);
+          
             } catch (error) {
                 console.error('Error handling image:', error);
             }
@@ -180,13 +179,14 @@ window.initializeQuill = function (dotnetHelper) {
                 reader.onload = async function (e) {
                     try {
                         const base64Image = e.target.result.split(',')[1]; // Get only the base64 part
-                        //  console.log('Base64 Image:', base64Image); // Debugging log
-                        const imageId = await dotnetHelper.invokeMethodAsync('UploadImage', base64Image);
-                        console.log('Image uploaded, ID:', imageId); // Debugging log
+                        const mimeType = file.type; 
+                        await dotnetHelper.invokeMethodAsync('UploadImage', base64Image, file.name);
+
                         // Insert the image into the editor using the base64 data
                         const range = quill.getSelection();
-                        quill.insertEmbed(range.index, 'image', `data:image/png;base64,${base64Image}`);
-                        console.log('Image inserted into Quill editor.');
+                       // quill.insertEmbed(range.index, 'image', `data:image/png;base64,${base64Image}`);
+                        quill.insertEmbed(range.index, 'image', `data:${mimeType};base64,${base64Image}`);
+
 
                     } catch (error) {
                         console.error('Image upload failed:', error);

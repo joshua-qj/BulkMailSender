@@ -369,13 +369,14 @@
     }
 
     [JSInvokable("UploadImage")]
-    public async Task<string> UploadImage(string base64Image)
+    public Task UploadImage(string base64Image, string originalFileName)
     {
-        Console.WriteLine("UploadImage triggered.");
         var imageId = Guid.NewGuid();
         // Decode the base64 string to a byte array
         var imageContent = Convert.FromBase64String(base64Image);
-
+        var fileName = !string.IsNullOrEmpty(originalFileName)
+    ? originalFileName
+    : $"embedded-{imageId}.png";
         // Determine the MIME type based on the image content
         var mimeType = FileHelperService.GetMimeTypeFromImageContent(imageContent) ?? "image/png"; // Default to PNG if not recognized
 
@@ -383,13 +384,12 @@
             {
                 Id = imageId,
                 Content = imageContent,
-                FileName = $"embedded-{imageId}.png",
+                FileName = fileName,
                 MimeType = mimeType
             };
 
         emailViewModel.InlineResources.Add(embeddedImage);
-
-        return imageId.ToString();
+        return Task.CompletedTask;
     }
     public async Task HandleEmailExcelFileUpload(InputFileChangeEventArgs e)
     {

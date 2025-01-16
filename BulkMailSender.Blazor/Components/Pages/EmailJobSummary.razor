@@ -1,7 +1,7 @@
 ﻿@page "/emailjobsummary/{userId:guid}"
 
 
-@* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
+@attribute [Authorize(Policy = "CanAccessEmailSending")]
 @inject IGetJobSummariesUseCase GetJobSummariesUseCase
 @inject NavigationManager Navigation
 
