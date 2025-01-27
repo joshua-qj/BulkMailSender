@@ -126,5 +126,9 @@ namespace BulkMailSender.Infrastructure.Services {
             // Other types or unknown
             return null;
         }
+
+        public Task<(bool IsSuccess, string ErrorMessage)> SendAsync(Email email, MailKit.Net.Smtp.SmtpClient? smtpClient = null) {
+            throw new NotImplementedException();
+        }
     }
 }

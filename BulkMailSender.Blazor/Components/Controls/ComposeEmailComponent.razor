@@ -146,7 +146,17 @@
                                         <InputText id="testRecipientEmail" @bind-Value="emailViewModel.TestRecipientEmail" class="form-control" placeholder="Enter a test recipient email" />
                                     </div>
                                     <div class="col-md-6 d-flex align-items-end">
-                                        <button type="button" class="btn btn-secondary w-100" @onclick="SendTestEmail">Send Test Email to Recipient</button>
+                                        <button type="button" class="btn btn-secondary w-100" @onclick="SendTestEmail" disabled="@isSendingTestEmail">
+                                            @if (isSendingTestEmail)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                <text>Sending...</text>
+                                            }
+                                            else
+                                            {
+                                                <text>Send Test Email to Recipient</text>
+                                                                    }
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -193,14 +203,15 @@
     public MarkupString Body { get; set; }
     private bool isEmailFromReadOnly;
     private bool showConfirmDialog = false;
-    private bool isSendingEmails = false;
+    private bool isSendingEmails = false; 
+    private bool isSendingTestEmail = false;
     private bool showemailDtosCountError = false;
     private string confirmationMessage = string.Empty;
     private List<ExcelImportDto> excelDtos = new();
     public string? testRecipientEmail { get; set; }
     private int emailCount;
     private string? currentUserId;
-    private Guid _requesterID;
+    private Guid _requesterId;
     private Guid _batchId = Guid.NewGuid();
 
     const int OneMB = 1024 * 1024;
@@ -215,8 +226,9 @@
     private DotNetObjectReference<ComposeEmailComponent> dotNetObjectReference; // Declared as a field
     private EditContext editContext;
     private RequesterViewModel _requester;
+    private RequesterDto _requesterDto;
     // private EmailSendingSettings settings;
-    private readonly ConcurrentBag<string> _failedEmails = new ConcurrentBag<string>();
+    private readonly ConcurrentDictionary<Guid, EmailFailureRecord> _failedEmails = new ConcurrentDictionary<Guid, EmailFailureRecord>();
     private readonly ConcurrentDictionary<Guid, byte> _processedAttachments = new();
     private readonly ConcurrentDictionary<Guid, byte> _processedInlineResources = new();
     protected override async Task OnInitializedAsync()
@@ -243,11 +255,11 @@
         }
         editContext = new EditContext(emailViewModel);
 
-        var requesterDto = await GetRequesterByNameUseCase.ExecuteAsync(RequesterLoginName);
-        _requester = Mapper.Map<RequesterViewModel>(requesterDto);
+        _requesterDto = await GetRequesterByNameUseCase.ExecuteAsync(RequesterLoginName);
+        _requester = Mapper.Map<RequesterViewModel>(_requesterDto);
         if (_requester != null)
         {
-            _requesterID = _requester.Id;
+            _requesterId = _requester.Id;
         }
     }
 
@@ -302,9 +314,11 @@
                     .Where(ir => inlineResourceIdsInBody.Contains(ir.Id.ToString()))
                     .ToList();
             }
-            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 20))
+            DateTime startTime = DateTime.Now;
+
+            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 5))
             {
-                await SendEmailsUseCase.ExecuteAsync(emailBatch);
+                await SendEmailsUseCase.ExecuteAsync(emailBatch, startTime, emailCount, _requesterDto, _failedEmails);
 
                 // Optionally, add delay or handle intermediate states
                 await Task.Delay(10); 
@@ -319,15 +333,18 @@
     }
 
     private async Task SendTestEmail()
-    {    // Manually trigger validation before proceeding
-        var isValid = editContext.Validate(); // This validates the form fields
-
-        if (!isValid)
-        {
-            return;
-        }
+    {
+        if (isSendingTestEmail) return; // Prevent reentry
+        isSendingTestEmail = true;
+        StatusMessageViewModelService.ResetStatusMessage();
         try
         {
+            var isValid = editContext.Validate(); // This validates the form fields
+
+            if (!isValid)
+            {
+                return;
+            }
             StatusMessageViewModelService.SetSuccessMessage("Sending test email...");
             emailViewModel.Body = EmailProcessingService.ReplaceEmbeddedImagesWithCid(emailViewModel.Body, emailViewModel.InlineResources);
 
@@ -343,13 +360,13 @@
             List<EmailDto> emailBatch = new List<EmailDto>(1);
 
             // Set additional properties
-            email.RequesterID = _requesterID;
+            email.RequesterID = _requesterId;
             email.UserId = string.IsNullOrEmpty(currentUserId) ? Guid.Empty : new Guid(currentUserId);
             email.Body = email.Body.Replace("{name}", "Test Recipient");
             email.EmailTo = emailViewModel.TestRecipientEmail; // Set the test recipient email
             emailBatch.Add(email);
 
-            await SendEmailsUseCase.ExecuteAsync(emailBatch);
+            await SendEmailsUseCase.ExecuteAsync(emailBatch, null,null, null);
             StatusMessageViewModelService.SetSuccessMessage("Test email sent successfully!");
         }
         catch (ValidationException)
@@ -362,6 +379,7 @@
         }
         finally
         {
+            isSendingTestEmail = false;
             StateHasChanged(); // Refresh the UI to show status changes
         }
     }
@@ -519,7 +537,7 @@
                 var email = Mapper.Map<EmailDto>((excelRow, emailViewModel));
 
                 // Set additional properties
-                email.RequesterID = _requesterID;
+                email.RequesterID = _requesterId;
                 email.BatchID = _batchId;
                 email.UserId = string.IsNullOrEmpty(currentUserId) ? Guid.Empty : new Guid(currentUserId);
                 email.Body = email.Body.Replace("{name}", email.DisplayName);

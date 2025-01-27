@@ -78,8 +78,8 @@
                      InvokeAsync(() =>
                      {
                          sent += statusUpdate.Status == "Completed" ? 1 : 0;
-                         StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.UpdatedAt}";
-                         failedEmails = statusUpdate.FailedEmails;
+                         StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.BatchStartTime}";
+                         // failedEmails = statusUpdate.FailedEmails;
 
             
                          StateHasChanged();

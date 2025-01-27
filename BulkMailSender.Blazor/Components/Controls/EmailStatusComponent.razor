@@ -1,6 +1,7 @@
 ﻿@* @page "/emailsendingstatus" *@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.WebUtilities
+@using System.Collections.Concurrent
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 @* @attribute [Authorize(Policy = "CanAccessEmailSending")] *@
@@ -21,13 +22,13 @@
             </div>
             <p class="card-text">@StatusMessage</p>
 
-            @if ((sent == Total && Total > 0))
+            @if (sent == Total && Total > 0 && failedEmails.Count == 0)
             {
                 <div class="alert alert-success" role="alert">
                     🎉 Email sending completed! Successfully sent all emails.
                 </div>
             }
-            else if (failedEmails.Count > 0 && (sent + failedEmails.Count) == Total)
+            @if (failedEmails.Count > 0)
             {
                 <div class="alert alert-danger" role="alert">
                     Email sending completed! Some emails failed to send. See details below.
@@ -45,13 +46,22 @@
                     @foreach (var failedEmail in failedEmails)
                     {
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            @failedEmail
-                            <span class="badge bg-danger rounded-pill">Failed</span>
+                            @failedEmail.Value.Email
+                            <span class="badge bg-danger rounded-pill">  @failedEmail.Value.ErrorMessage</span>
                         </li>
                     }
                 </ul>
             </div>
         </div>
+    }
+    @if (failedEmails.Count + sent == Total)
+    {
+        <div class="alert alert-success" role="alert">
+            Total time is: @(startTime.HasValue
+        ? (DateTime.Now - startTime.Value).ToString(@"hh\:mm\:ss")
+        : "N/A")
+        </div>
+
     }
 </div>
 
@@ -64,7 +74,9 @@
     private string StatusMessage = "Initializing...";
     private HubConnection? _hubConnection;
     private int sent = 0;
-    private List<string> failedEmails = new();
+    private ConcurrentDictionary<Guid, EmailFailureRecord> failedEmails = new();
+    private DateTime? startTime;
+
 
     protected override async Task OnParametersSetAsync()
     {
@@ -78,15 +90,32 @@
             {
                 InvokeAsync(() =>
                 {
+                    startTime = statusUpdate.BatchStartTime;
                     sent += statusUpdate.Status == "Completed" ? 1 : 0;
+                    Console.WriteLine($"Received update for email: {statusUpdate.EmailTo}");
+                    Console.WriteLine($"Status: {statusUpdate.Status}");
+                    Console.WriteLine($"Batch Start Time: {statusUpdate.BatchStartTime}");
+                    Console.WriteLine($"Message: {statusUpdate.Message}");
                     if (!string.IsNullOrEmpty(statusUpdate.Message))
                     {
-                        StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) at {statusUpdate.UpdatedAt}, error: {statusUpdate.Message}";
+                        StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) , error: {statusUpdate.Message}";
                     }
                     else
                     {
-                        StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) at {statusUpdate.UpdatedAt}";
+                        StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) .";
                     }
+                    // if (statusUpdate.FailedEmails != null && statusUpdate.FailedEmails.Count > 0)
+                    // {
+                    //     foreach (var item in statusUpdate.FailedEmails)
+                    //     {
+                    //         failedEmails.Add(new EmailFailureRecord
+                    //             {
+                    //                 Email = item.Email,
+                    //                 ErrorMessage = item.ErrorMessage
+                    //             });
+
+                    //     }
+                    // }
                     failedEmails = statusUpdate.FailedEmails;
                     StateHasChanged();
                 });
@@ -98,38 +127,38 @@
     }
     // protected override async Task OnInitializedAsync()
     // {
-        // Extract the jobId from the query parameters
-        // var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        // if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("jobId", out var jobIdString) &&
-        //     Guid.TryParse(jobIdString, out var jobId))
-        // {
-        //     // Use a local variable for `total` to handle the `out` parameter
-        //     if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("total", out var totalString) &&
-        //         int.TryParse(totalString, out var parsedTotal))
-        //     {
-        //         //   total = parsedTotal; // Assign the parsed value to the property
-        //     }
-        //     _hubConnection = new HubConnectionBuilder()
-        //         .WithUrl(Navigation.ToAbsoluteUri("/emailStatus"))
-        //         .Build();
+    // Extract the jobId from the query parameters
+    // var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+    // if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("jobId", out var jobIdString) &&
+    //     Guid.TryParse(jobIdString, out var jobId))
+    // {
+    //     // Use a local variable for `total` to handle the `out` parameter
+    //     if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("total", out var totalString) &&
+    //         int.TryParse(totalString, out var parsedTotal))
+    //     {
+    //         //   total = parsedTotal; // Assign the parsed value to the property
+    //     }
+    //     _hubConnection = new HubConnectionBuilder()
+    //         .WithUrl(Navigation.ToAbsoluteUri("/emailStatus"))
+    //         .Build();
 
-            // _hubConnection.On<Application.Dtos.EmailStatusUpdateEventDto>("ReceiveStatusUpdate", (statusUpdate) =>
-            //      {
-            //          InvokeAsync(() =>
-            //          {
-            //              sent += statusUpdate.Status == "Completed" ? 1 : 0;
-            //              //    StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.UpdatedAt}";
-            //              failedEmails = statusUpdate.FailedEmails;
+    // _hubConnection.On<Application.Dtos.EmailStatusUpdateEventDto>("ReceiveStatusUpdate", (statusUpdate) =>
+    //      {
+    //          InvokeAsync(() =>
+    //          {
+    //              sent += statusUpdate.Status == "Completed" ? 1 : 0;
+    //              //    StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.UpdatedAt}";
+    //              failedEmails = statusUpdate.FailedEmails;
 
 
-            //              StateHasChanged();
-            //          });
-            //      });
+    //              StateHasChanged();
+    //          });
+    //      });
 
-            // await _hubConnection.StartAsync();
-            // // Register this client with the jobId for updates
-            // await _hubConnection.SendAsync("RegisterJobConnection", jobId);
-        // }
+    // await _hubConnection.StartAsync();
+    // // Register this client with the jobId for updates
+    // await _hubConnection.SendAsync("RegisterJobConnection", jobId);
+    // }
     // }
     public async ValueTask DisposeAsync()
     {

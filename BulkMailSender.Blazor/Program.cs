@@ -166,7 +166,9 @@ builder.Services.AddSignalR(options => {
     options.ClientTimeoutInterval = TimeSpan.FromMinutes(5);
     options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     options.KeepAliveInterval = TimeSpan.FromSeconds(10);
-});
+    options.EnableDetailedErrors = true;
+}); 
+
 builder.Services.AddServerSideBlazor(options => {
     options.DetailedErrors = true;
 });

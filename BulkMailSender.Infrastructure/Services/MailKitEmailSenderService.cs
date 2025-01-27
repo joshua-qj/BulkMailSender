@@ -2,11 +2,18 @@
 using BulkMailSender.Domain.Entities.Email;
 using MailKit.Security;
 using MimeKit;
+using System.Net.Mail;
 
 namespace BulkMailSender.Infrastructure.Services {
     public class MailKitEmailSenderService : IEmailSenderService {
-        public async Task<(bool IsSuccess, string ErrorMessage)> SendAsync(Email email) {
+        public async Task<(bool IsSuccess, string ErrorMessage)> SendAsync(Email email, MailKit.Net.Smtp.SmtpClient? smtpClient = null) {
+            bool isSmtpClientCreatedLocally =  smtpClient == null;
             try {
+                if (isSmtpClientCreatedLocally) {
+                    smtpClient = new MailKit.Net.Smtp.SmtpClient();
+                    await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
+                    await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
+                }
                 var message = new MimeMessage();
 
                 // Set the sender and recipient
@@ -59,17 +66,32 @@ namespace BulkMailSender.Infrastructure.Services {
                 message.Body = bodyBuilder.ToMessageBody();
 
                 // Send the email using MailKit's SmtpClient
-                
-                using var smtpClient = new MailKit.Net.Smtp.SmtpClient();
-                await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
-                await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
+
+                //if (smtpClient == null) {
+                //    smtpClient = new MailKit.Net.Smtp.SmtpClient();
+                //    isSmtpClientCreatedLocally = true;
+
+                    // Connect to the SMTP server
+                //    await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
+                //    await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
+                //}
+                //using var smtpClient = new MailKit.Net.Smtp.SmtpClient();
+                //await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
+                //await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
                 await smtpClient.SendAsync(message);
-                await smtpClient.DisconnectAsync(true);
+                //await smtpClient.DisconnectAsync(true);
 
                 return (true, string.Empty);
             }
             catch (Exception ex) {
                 return (false, $"Failed to send email: {ex.Message}");
+            }
+            finally {
+                // If the smtpClient was created locally, disconnect and dispose it
+                if (isSmtpClientCreatedLocally && smtpClient != null) {
+                    await smtpClient.DisconnectAsync(true);
+                    smtpClient.Dispose();
+                }
             }
         }
 

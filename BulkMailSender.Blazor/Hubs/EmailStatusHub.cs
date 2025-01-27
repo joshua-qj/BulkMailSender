@@ -36,7 +36,7 @@ namespace BulkMailSender.Blazor.Hubs {
         }
 
         public static string GetConnectionIdForBatchJob(Guid batchId) {
-            return JobConnections.TryGetValue(batchId, out var connectionId) ? connectionId : null;
+            return JobConnections.TryGetValue(batchId, out var connectionId) ? connectionId : string.Empty;
         }
         public async Task NotifyEmailStatusAsync(string connectionId, EmailStatusUpdateEventDto statusUpdateEvent) {
             await Clients.Client(connectionId).SendAsync("ReceiveStatusUpdate", statusUpdateEvent);

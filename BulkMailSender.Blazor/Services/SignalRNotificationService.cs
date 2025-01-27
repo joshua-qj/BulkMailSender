@@ -12,10 +12,13 @@ namespace BulkMailSender.Blazor.Services {
 
         public async Task NotifyEmailStatusAsync(Guid batchId, EmailStatusUpdateEventDto emailStatusUpdateDto) {
             var connectionId = EmailStatusHub.GetConnectionIdForBatchJob(batchId);
-            if (connectionId != null) {
+            if (string.IsNullOrEmpty(connectionId)) {
                 await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveStatusUpdate", emailStatusUpdateDto);
 
-            };
+            } else {
+                Console.WriteLine("No connection found for the batch job.");
+            }
+
         }
     }
 }
