@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BulkMailSender.Application.Dtos {
     public class EmailFailureRecord {
-            public string Email { get; set; } = string.Empty; // Email address of the failure
+            public string Email { get; set; } = string.Empty; 
             public string ErrorMessage { get; set; } = string.Empty;
         }
 }

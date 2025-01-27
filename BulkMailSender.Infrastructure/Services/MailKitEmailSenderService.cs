@@ -65,21 +65,7 @@ namespace BulkMailSender.Infrastructure.Services {
                 // Set the final email body
                 message.Body = bodyBuilder.ToMessageBody();
 
-                // Send the email using MailKit's SmtpClient
-
-                //if (smtpClient == null) {
-                //    smtpClient = new MailKit.Net.Smtp.SmtpClient();
-                //    isSmtpClientCreatedLocally = true;
-
-                    // Connect to the SMTP server
-                //    await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
-                //    await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
-                //}
-                //using var smtpClient = new MailKit.Net.Smtp.SmtpClient();
-                //await smtpClient.ConnectAsync(email.Requester.Server.ServerName, email.Requester.Server.Port, SecureSocketOptions.StartTls);
-                //await smtpClient.AuthenticateAsync(email.Requester.LoginName, email.Requester.Password);
                 await smtpClient.SendAsync(message);
-                //await smtpClient.DisconnectAsync(true);
 
                 return (true, string.Empty);
             }

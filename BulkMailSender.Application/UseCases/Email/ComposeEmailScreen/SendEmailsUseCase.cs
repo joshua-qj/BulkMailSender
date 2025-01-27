@@ -61,8 +61,6 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
 
                             if (requester is null) {
                                 errorMessage = "Cannot find requester.";
-                                //  failedEmails.Add(emailDto.EmailTo);
-                                //failedEmails.TryAdd(emailDto.EmailTo, errorMessage);
                                 failedEmails.TryAdd(Guid.NewGuid(), new EmailFailureRecord {
                                     Email = emailDto.EmailTo,
                                     ErrorMessage = errorMessage
@@ -73,22 +71,16 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
                         }
                         catch (Exception requesterEx) {
                             errorMessage = requesterEx.Message;
-                        //    failedEmails.Add(new KeyValuePair<string, string>(emailDto.EmailTo, errorMessage));
-                        //failedEmails.Add(emailDto.EmailTo);
-                        //failedEmails.TryAdd(emailDto.EmailTo, errorMessage);
-                        failedEmails.TryAdd(Guid.NewGuid(), new EmailFailureRecord {
-                        Email = emailDto.EmailTo,
+                            failedEmails.TryAdd(Guid.NewGuid(), new EmailFailureRecord {
+                                Email = emailDto.EmailTo,
                                 ErrorMessage = errorMessage
                             });
-                return; // Skip this email
+                            return; // Skip this email
                         }
 
                         // Save email and update ID
                         var emailDtoSave = _mapper.Map<EmailDto>(email);
                         //   var saveEmailUseCase1 = _serviceProvider.GetRequiredService<ISaveEmailUseCase>();
-                        //Console.WriteLine($"saveEmailUseCase from sendemailsusecase  . HashCode: {_saveEmailUseCase.GetHashCode()}");
-                        //Console.WriteLine($"_emailRepository  from sendemailsusecase . HashCode: {_emailRepository.GetHashCode().ToString()}");
-                        //Console.WriteLine($"Thread  from sendemailsusecase : {Thread.CurrentThread.ManagedThreadId}");
                         var savedEmailDtoResult = await _saveEmailUseCase.ExecuteAsync(emailDtoSave);
                         email.Id = savedEmailDtoResult.Id;
 
@@ -113,7 +105,7 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
                         }
                         catch (Exception sendEx) {
                             // failedEmails.Add(new KeyValuePair<string, string>(emailDto.EmailTo, sendEx.Message));
-                          //  failedEmails.TryAdd(emailDto.EmailTo, sendEx.Message);
+                            //  failedEmails.TryAdd(emailDto.EmailTo, sendEx.Message);
                             errorMessage = sendEx.Message;
                             failedEmails.TryAdd(Guid.NewGuid(), new EmailFailureRecord {
                                 Email = emailDto.EmailTo,
@@ -123,10 +115,10 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
                         }
                     }
                     catch (Exception ex) {
-                       // failedEmails.Add(new KeyValuePair<string, string>(emailDto.EmailTo, ex.Message));
+                        // failedEmails.Add(new KeyValuePair<string, string>(emailDto.EmailTo, ex.Message));
                         //failedEmails.TryAdd(emailDto.EmailTo, ex.Message);
                         errorMessage = ex.Message;
-                        failedEmails.TryAdd( Guid.NewGuid(), new EmailFailureRecord {
+                        failedEmails.TryAdd(Guid.NewGuid(), new EmailFailureRecord {
                             Email = emailDto.EmailTo,
                             ErrorMessage = errorMessage
                         });
@@ -146,29 +138,9 @@ namespace BulkMailSender.Application.UseCases.Email.ComposeEmailScreen {
                                     EmailTo = emailDto.EmailTo,
                                     BatchStartTime = startTime
                                 };
-                                try {
-                                    //var json = JsonSerializer.Serialize(failedEmails); 
-                                    //Console.WriteLine(json);
-                                    await _notificationService.NotifyEmailStatusAsync(emailDto.BatchID.Value, finalStatus);
-                                    //try {
-                                    //    var deserializedFailedEmails = JsonSerializer.Deserialize<ConcurrentBag<EmailFailureRecord>>(json);
-                                    //    Console.WriteLine("Deserialization succeeded.");
-                                    //}
-                                    //catch (Exception ex) {
-                                    //    Console.WriteLine("Deserialization failed:");
-                                    //    Console.WriteLine(ex.Message);
-                                    //}
-                                }
-                                catch (AggregateException ex) {
-                                    foreach (var innerException in ex.InnerExceptions) {
-                                        Console.WriteLine($"Inner Exception: {innerException.Message}");
-                                    }
-                                }
-                                catch (Exception ex) {
-                                    var ErrddorMessage = $"Failed to notify email status: {ex.Message}";
-                                    //throw;
-                                }
-                         }
+                                await _notificationService.NotifyEmailStatusAsync(emailDto.BatchID.Value, finalStatus);
+
+                            }
                             catch (Exception ex) {
                                 Console.WriteLine($"Failed to notify email status: {ex.Message}");
                             }
