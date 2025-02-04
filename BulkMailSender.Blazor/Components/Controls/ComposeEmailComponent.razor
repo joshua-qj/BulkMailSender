@@ -14,10 +14,6 @@
 @inject EmailProcessingService EmailProcessingService
 @inject FileHelperService FileHelperService
 @inject StatusMessageViewModelService StatusMessageViewModelService
-@*
-@inject IEmailProcessor EmailProcessor
-@inject IUpdateEmailStatusUseCase UpdateEmailStatusUseCase
-@inject IOptionsSnapshot<EmailSendingSettings> EmailSettings *@
 @inject IServiceProvider ServiceProvider
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
@@ -31,7 +27,13 @@
                     <div class="card-header">
                         <h4 class="card-title">Compose Email</h4>
                     </div>
-                    <StatusMessageComponent StatusMessage="@StatusMessageViewModelService.CurrentStatus" />
+@*                     <div class="position-fixed top-0 start-50 translate-middle-x w-100 p-2 z-3">
+                        <StatusMessageComponent StatusMessage="@StatusMessageViewModelService.CurrentStatus" />
+                    </div> *@
+                    <div class="sticky-top w-100 p-2 bg-white shadow-sm">
+                        <StatusMessageComponent StatusMessage="@StatusMessageViewModelService.CurrentStatus" />
+                    </div>
+                    @*                     <StatusMessageComponent StatusMessage="@StatusMessageViewModelService.CurrentStatus" /> *@
                     <div class="card-body">
                         <!-- Single EditForm to handle email subject and attachment -->
                         <EditForm EditContext="@editContext" OnValidSubmit="ConfirmSendAllEmail">
@@ -43,10 +45,10 @@
                                 <div class="form-group">
                                     <label for="emailFrom" class="form-label">Email From</label>
                                     <InputText id="emailFrom"
-                                    @bind-Value="emailViewModel.EmailFrom"
-                                    class="form-control"
-                                    readonly="@isEmailFromReadOnly"
-                                    placeholder="Enter your email if not pre-filled" />
+                                               @bind-Value="emailViewModel.EmailFrom"
+                                               class="form-control"
+                                               readonly="@isEmailFromReadOnly"
+                                               placeholder="Enter your email if not pre-filled" />
                                     <ValidationMessage For="@(() => emailViewModel.EmailFrom)" />
                                 </div>
 
@@ -146,7 +148,10 @@
                                         <InputText id="testRecipientEmail" @bind-Value="emailViewModel.TestRecipientEmail" class="form-control" placeholder="Enter a test recipient email" />
                                     </div>
                                     <div class="col-md-6 d-flex align-items-end">
-                                        <button type="button" class="btn btn-secondary w-100" @onclick="SendTestEmail" disabled="@isSendingTestEmail">
+                                        <button type="button"
+                                                class="btn btn-secondary w-100"
+                                                @onclick="SendTestEmail"
+                                                disabled="@(string.IsNullOrEmpty(emailViewModel.TestRecipientEmail) || isSendingTestEmail)">
                                             @if (isSendingTestEmail)
                                             {
                                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -155,8 +160,9 @@
                                             else
                                             {
                                                 <text>Send Test Email to Recipient</text>
-                                                                    }
+                                            }
                                         </button>
+
                                     </div>
                                 </div>
                             </div>
@@ -181,8 +187,8 @@
         </div> <!-- Closing row -->
         <!-- Confirmation Modal -->
         <ConfirmDialogComponent Show="showConfirmDialog"
-        Message="@confirmationMessage"
-        ConfirmationResult="HandleConfirmationResult" />
+                                Message="@confirmationMessage"
+                                ConfirmationResult="HandleConfirmationResult" />
     </div> <!-- Closing container-fluid -->
 }
 
@@ -203,12 +209,12 @@
     public MarkupString Body { get; set; }
     private bool isEmailFromReadOnly;
     private bool showConfirmDialog = false;
-    private bool isSendingEmails = false; 
+    private bool isSendingEmails = false;
     private bool isSendingTestEmail = false;
     private bool showemailDtosCountError = false;
     private string confirmationMessage = string.Empty;
     private List<ExcelImportDto> excelDtos = new();
-    public string? testRecipientEmail { get; set; }
+
     private int emailCount;
     private string? currentUserId;
     private Guid _requesterId;
@@ -232,7 +238,7 @@
     private readonly ConcurrentDictionary<Guid, byte> _processedAttachments = new();
     private readonly ConcurrentDictionary<Guid, byte> _processedInlineResources = new();
     protected override async Task OnInitializedAsync()
-    {   
+    {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         // Retrieve the settings from IOptionsSnapshot
@@ -284,7 +290,7 @@
         emailViewModel.Attachments.Remove(file);
     }
 
-    private  void ConfirmSendAllEmail()
+    private void ConfirmSendAllEmail()
     {
         if (excelDtos.Count == 0)
         {
@@ -315,13 +321,13 @@
                     .ToList();
             }
             DateTime startTime = DateTime.Now;
-
-            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 5))
+            _failedEmails.Clear();
+            foreach (var emailBatch in PrepareEmailBatchesFromExcel(excelDtos, 8))
             {
                 await SendEmailsUseCase.ExecuteAsync(emailBatch, startTime, emailCount, _requesterDto, _failedEmails);
 
                 // Optionally, add delay or handle intermediate states
-                await Task.Delay(10); 
+                await Task.Delay(10);
             }
             _processedAttachments.Clear();
             _processedInlineResources.Clear();
@@ -336,10 +342,11 @@
     {
         if (isSendingTestEmail) return; // Prevent reentry
         isSendingTestEmail = true;
+        _failedEmails.Clear();
         StatusMessageViewModelService.ResetStatusMessage();
         try
         {
-            var isValid = editContext.Validate(); // This validates the form fields
+             var isValid = editContext.Validate(); // This validates the form fields
 
             if (!isValid)
             {
@@ -365,9 +372,26 @@
             email.Body = email.Body.Replace("{name}", "Test Recipient");
             email.EmailTo = emailViewModel.TestRecipientEmail; // Set the test recipient email
             emailBatch.Add(email);
+            // try
+            // {
+            //     await SendEmailsUseCase.ExecuteAsync(emailBatch, null, null, null);
+            // }
+            // catch (Exception ex)
+            // {
 
-            await SendEmailsUseCase.ExecuteAsync(emailBatch, null,null, null);
-            StatusMessageViewModelService.SetSuccessMessage("Test email sent successfully!");
+            //     StatusMessageViewModelService.SetSuccessMessage(ex.Message);
+            // }
+            //  await SendEmailsUseCase.ExecuteAsync(emailBatch, startTime, emailCount, _requesterDto, _failedEmails);
+
+            await SendEmailsUseCase.ExecuteAsync(emailBatch, null, 1, null, _failedEmails);
+            if (_failedEmails.Any())
+            {
+                StatusMessageViewModelService.SetErrorMessage(_failedEmails.FirstOrDefault().Value.ErrorMessage);
+            }
+            else
+            {
+                StatusMessageViewModelService.SetSuccessMessage("Test email sent successfully!");
+            }
         }
         catch (ValidationException)
         {

@@ -92,10 +92,10 @@
                 {
                     startTime = statusUpdate.BatchStartTime;
                     sent += statusUpdate.Status == "Completed" ? 1 : 0;
-                    Console.WriteLine($"Received update for email: {statusUpdate.EmailTo}");
-                    Console.WriteLine($"Status: {statusUpdate.Status}");
-                    Console.WriteLine($"Batch Start Time: {statusUpdate.BatchStartTime}");
-                    Console.WriteLine($"Message: {statusUpdate.Message}");
+                    // Console.WriteLine($"Received update for email: {statusUpdate.EmailTo}");
+                    // Console.WriteLine($"Status: {statusUpdate.Status}");
+                    // Console.WriteLine($"Batch Start Time: {statusUpdate.BatchStartTime}");
+                    // Console.WriteLine($"Message: {statusUpdate.Message}");
                     if (!string.IsNullOrEmpty(statusUpdate.Message))
                     {
                         StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) , error: {statusUpdate.Message}";
@@ -125,41 +125,6 @@
             await _hubConnection.SendAsync("RegisterJobConnection", BatchId);
         }
     }
-    // protected override async Task OnInitializedAsync()
-    // {
-    // Extract the jobId from the query parameters
-    // var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-    // if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("jobId", out var jobIdString) &&
-    //     Guid.TryParse(jobIdString, out var jobId))
-    // {
-    //     // Use a local variable for `total` to handle the `out` parameter
-    //     if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("total", out var totalString) &&
-    //         int.TryParse(totalString, out var parsedTotal))
-    //     {
-    //         //   total = parsedTotal; // Assign the parsed value to the property
-    //     }
-    //     _hubConnection = new HubConnectionBuilder()
-    //         .WithUrl(Navigation.ToAbsoluteUri("/emailStatus"))
-    //         .Build();
-
-    // _hubConnection.On<Application.Dtos.EmailStatusUpdateEventDto>("ReceiveStatusUpdate", (statusUpdate) =>
-    //      {
-    //          InvokeAsync(() =>
-    //          {
-    //              sent += statusUpdate.Status == "Completed" ? 1 : 0;
-    //              //    StatusMessage = $"{statusUpdate.Message}, ( {sent} / {total} ) at {statusUpdate.UpdatedAt}";
-    //              failedEmails = statusUpdate.FailedEmails;
-
-
-    //              StateHasChanged();
-    //          });
-    //      });
-
-    // await _hubConnection.StartAsync();
-    // // Register this client with the jobId for updates
-    // await _hubConnection.SendAsync("RegisterJobConnection", jobId);
-    // }
-    // }
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)

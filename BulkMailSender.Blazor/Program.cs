@@ -17,7 +17,6 @@ using BulkMailSender.Blazor.Mappings;
 using BulkMailSender.Blazor.Services;
 using BulkMailSender.Infrastructure.Common.Entities.Identity;
 using BulkMailSender.Infrastructure.InMemoryPersistence.Contexts;
-using BulkMailSender.Infrastructure.InMemoryPersistence.Repositories;
 using BulkMailSender.Infrastructure.Mappings;
 using BulkMailSender.Infrastructure.Services;
 using BulkMailSender.Infrastructure.SQLServerPersistence.Contexts;
@@ -141,7 +140,7 @@ builder.Services.AddTransient<IGetEmailByIdUseCase, GetEmailByIdUseCase>();
 
 builder.Services.AddScoped<IExcelFileProcessingService, ExcelFileProcessingService>();
 
-
+builder.Services.AddSingleton<ISmtpClientPoolFactory, SmtpClientPoolFactory>();
 // import excel file usecase
 
 builder.Services.AddScoped<IExcelReaderUseCase, ExcelReaderUseCase>();

@@ -3,8 +3,6 @@ using BulkMailSender.Application.Dtos;
 using BulkMailSender.Application.Dtos.UserDtos;
 using BulkMailSender.Blazor.ViewModels;
 using BulkMailSender.Blazor.ViewModels.UserViewModels;
-using BulkMailSender.Domain.Entities.Identity;
-using BulkMailSender.Infrastructure.Common.Entities.Identity;
 
 namespace BulkMailSender.Blazor.Mappings {
     public class BlazorMappingProfile : Profile {

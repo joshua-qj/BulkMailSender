@@ -24,7 +24,7 @@ namespace BulkMailSender.Blazor.ViewModels {
 
         // Email Address in lowercase as specified in the query
         [EmailAddress(ErrorMessage = "Please enter a valid test recipient email address.")]
-        public string TestRecipientEmail { get; set; }
+        public string? TestRecipientEmail { get; set; }
         public Guid? BatchID { get; set; }
         public Guid UserId { get; set; }
         // List of attachments

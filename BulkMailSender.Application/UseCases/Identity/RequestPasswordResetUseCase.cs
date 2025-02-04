@@ -98,9 +98,6 @@ namespace BulkMailSender.Application.UseCases.Identity {
 
             }
             catch (Exception ex) {
-                // Log the exception if necessary
-                // _logger.LogError(ex, "An error occurred while sending the password reset link");
-
                 return ResultDto.Failure("An error occurred while sending the password reset link.");
             }
         }

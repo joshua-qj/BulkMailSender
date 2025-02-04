@@ -2,12 +2,12 @@
 using BulkMailSender.Domain.Entities.Email;
 using MailKit.Security;
 using MimeKit;
-using System.Net.Mail;
 
 namespace BulkMailSender.Infrastructure.Services {
     public class MailKitEmailSenderService : IEmailSenderService {
         public async Task<(bool IsSuccess, string ErrorMessage)> SendAsync(Email email, MailKit.Net.Smtp.SmtpClient? smtpClient = null) {
-            bool isSmtpClientCreatedLocally =  smtpClient == null;
+            bool isSmtpClientCreatedLocally = smtpClient == null;
+
             try {
                 if (isSmtpClientCreatedLocally) {
                     smtpClient = new MailKit.Net.Smtp.SmtpClient();
@@ -64,10 +64,28 @@ namespace BulkMailSender.Infrastructure.Services {
 
                 // Set the final email body
                 message.Body = bodyBuilder.ToMessageBody();
+                //await _sendSemaphore.WaitAsync();
+                try {
+                    //   Console.WriteLine($"Thread {Task.CurrentId} enters inside smtpClient section at {DateTime.Now:HH:mm:ss.fff}");
+                    Console.WriteLine($"using smtpClient HashCode {smtpClient?.GetHashCode().ToString()}  at {DateTime.Now:HH:mm:ss.fff}");
+                    if (smtpClient.IsConnected) {
 
-                await smtpClient.SendAsync(message);
+                        await smtpClient.SendAsync(message);
+                    } else {
+                        Console.WriteLine($"using smtpClient HashCode {smtpClient?.GetHashCode().ToString()} failed at {DateTime.Now:HH:mm:ss.fff}");
+
+                    }
+                    // Console.WriteLine($"Thread {Task.CurrentId} exits smtpClient section at {DateTime.Now:HH:mm:ss.fff}");
+                }
+                catch (Exception ex) {
+                    return (false, $"Failed to send email: {ex.Message}");
+                }
+                finally {
+                    //_sendSemaphore.Release();
+                }
 
                 return (true, string.Empty);
+
             }
             catch (Exception ex) {
                 return (false, $"Failed to send email: {ex.Message}");
@@ -90,23 +108,5 @@ namespace BulkMailSender.Infrastructure.Services {
             return supportedInlineMimeTypes.Contains(mimeType.ToLower());
         }
 
-        public static string GetMimeTypeFromImageContent(byte[] imageContent) {
-            if (imageContent == null || imageContent.Length < 4)
-                return null;
-
-            // Checking file signatures for common image formats
-            var fileSignature = BitConverter.ToString(imageContent, 0, 4).Replace("-", "").ToLower();
-
-            return fileSignature switch {
-                "ffd8" => "image/jpeg", // JPEG
-                "89504e47" => "image/png", // PNG
-                "47494638" => "image/gif", // GIF
-                "424d" => "image/bmp", // BMP
-                "52494646" when imageContent.Length > 12 && BitConverter.ToString(imageContent, 8, 4).Replace("-", "").ToLower() == "57454250" => "image/webp", // WebP
-                "49492a00" or "4d4d002a" => "image/tiff", // TIFF
-                "00000100" => "image/x-icon", // ICO
-                _ => null // Unknown type
-            };
-        }
     }
 }

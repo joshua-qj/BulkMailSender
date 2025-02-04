@@ -19,13 +19,11 @@ namespace BulkMailSender.Blazor.Hubs {
             return base.OnConnectedAsync();
         }
 
-        public override Task OnDisconnectedAsync(Exception exception) {
-            // Remove connection when client disconnects
+        public override Task OnDisconnectedAsync(Exception? exception) {
             var connection = Context.ConnectionId;
             var job = JobConnections.FirstOrDefault(j => j.Value == connection);
-            if (!job.Equals(default(KeyValuePair<Guid, string>))) {
-                JobConnections.Remove(job.Key, out _);
-            }
+            if (job.Key != Guid.Empty)
+                JobConnections.TryRemove(job.Key, out _);
             return base.OnDisconnectedAsync(exception);
         }
 

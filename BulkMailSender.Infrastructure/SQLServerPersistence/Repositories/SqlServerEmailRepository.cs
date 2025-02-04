@@ -5,6 +5,8 @@ using BulkMailSender.Domain.Entities.Email;
 using BulkMailSender.Infrastructure.Common.Entities.Email;
 using BulkMailSender.Infrastructure.SQLServerPersistence.Contexts;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using System.Net.Mail;
 
 namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
     public class SqlServerEmailRepository : IEmailRepository {
@@ -100,203 +102,83 @@ namespace BulkMailSender.Infrastructure.SQLServerPersistence.Repositories {
                 );
         }
 
-
+        private readonly ConcurrentDictionary<Guid, object> _attachmentLocks = new();
+        private readonly ConcurrentDictionary<Guid, object> _inlineResourceLocks = new();
         public async Task<Email> SaveEmailAsync(Email email) {
             using var dbContext = _contextFactory.CreateDbContext();
             if (email == null) return null;
 
-
             var emailEntity = _mapper.Map<EmailEntity>(email);
-            if (emailEntity == null) return null; // Handle attachments
+            if (emailEntity == null) return null;
+
+            // Handle attachments
             foreach (var attachment in email.Attachments) {
+                // Ensure lock exists for this attachment ID
+                var lockObject = _attachmentLocks.GetOrAdd(attachment.Id, _ => {
+                    Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId}: attachment.Id = {attachment.Id} start lock");
+                    return new object();
+                });
+                Console.WriteLine($"lockObject hashcode {lockObject.GetHashCode().ToString()}: attachment.Id = {attachment.Id} start lock");
 
-                Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId}: attachment.Id = {attachment.Id} inside foreach");
-                var existingAttachment = await dbContext.Attachments
-                    .FirstOrDefaultAsync(a => a.Id == attachment.Id);
+                // Use the lock object to synchronize
+                lock (lockObject) {
+                    var existingAttachment = dbContext.Attachments
+                        .FirstOrDefault(a => a.Id == attachment.Id);
 
-                if (existingAttachment == null) {
-                    var attachmentEntity = _mapper.Map<AttachmentEntity>(attachment);
-                    await dbContext.Attachments.AddAsync(attachmentEntity);
+                    if (existingAttachment == null) {
+                        var attachmentEntity = _mapper.Map<AttachmentEntity>(attachment);
+                        dbContext.Attachments.Add(attachmentEntity);
+                        dbContext.SaveChanges();
+                    }
                 }
                 emailEntity.EmailAttachments.Add(new EmailAttachmentEntity {
                     EmailId = emailEntity.Id,
                     AttachmentId = attachment.Id
                 });
-
             }
 
-            // Handle inline resources
+
+            // Handle inline resources (similar to attachments)
             foreach (var inlineResource in email.InlineResources) {
-                var existingInlineResource = await dbContext.InlineResources
-                    .FirstOrDefaultAsync(a => a.Id == inlineResource.Id);
-
-                if (existingInlineResource == null) {
-                    var inlineResourceEntity = _mapper.Map<InlineResourceEntity>(inlineResource);
-                    dbContext.InlineResources.Add(inlineResourceEntity);
-                }
-                emailEntity.EmailInlineResources.Add(new EmailInlineResourceEntity {
-                    EmailId = emailEntity.Id,
-                    InlineResourceId = inlineResource.Id
+       
+                var lockObject = _inlineResourceLocks.GetOrAdd(inlineResource.Id, _ => {
+                    Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId}: inlineResource.Id = {inlineResource.Id} start lock");
+                    return new object();
                 });
-            }
-            await dbContext.Emails.AddAsync(emailEntity);
-            if (emailEntity.Status != null) {
-                dbContext.Entry(emailEntity.Status).State = EntityState.Unchanged;
+                Console.WriteLine($"lockObject hashcode {lockObject.GetHashCode().ToString()}: inlineResource.Id = {inlineResource.Id} start lock");
+                // Proper locking with object for each inline resource
+                lock (lockObject) {
+                    var existingInlineResource = dbContext.InlineResources
+                        .FirstOrDefault(a => a.Id == inlineResource.Id);
+
+                    if (existingInlineResource == null) {
+                        var inlineResourceEntity = _mapper.Map<InlineResourceEntity>(inlineResource);
+                        dbContext.InlineResources.Add(inlineResourceEntity);
+                        dbContext.SaveChanges();
+                    }
+
+                    emailEntity.EmailInlineResources.Add(new EmailInlineResourceEntity {
+                        EmailId = emailEntity.Id,
+                        InlineResourceId = inlineResource.Id
+                    });
+                }
             }
 
-            if (emailEntity.Requester != null) {
+            await dbContext.Emails.AddAsync(emailEntity);
+
+            if (emailEntity.Status != null)
+                dbContext.Entry(emailEntity.Status).State = EntityState.Unchanged;
+
+            if (emailEntity.Requester != null)
                 dbContext.Entry(emailEntity.Requester).State = EntityState.Unchanged;
-            }
 
             await dbContext.SaveChangesAsync();
-            email.Id = emailEntity.Id; // Assuming the Id is generated after SaveChangesAsync
+            email.Id = emailEntity.Id;
 
             return email;
         }
 
-
-
-        //public async Task<Email> SaveEmailAsync(Email email) {
-        //    using var dbContext = _contextFactory.CreateDbContext();
-        //    if (email == null) {
-        //        throw new ArgumentNullException(nameof(email));
-        //    }
-
-        //    var emailEntity = _mapper.Map<EmailEntity>(email);
-        //    if (emailEntity == null) return null;
-
-        //    foreach (var attachment in email.Attachments) {
-        //        SemaphoreSlim semaphore;
-
-        //        // Ensure thread-safe retrieval or creation of the semaphore
-        //        lock (_dictionaryLock) {
-        //            if (!_attachmentLocks.TryGetValue(attachment.Id, out semaphore)) {
-        //                semaphore = new SemaphoreSlim(1, 1);
-        //                _attachmentLocks[attachment.Id] = semaphore;
-        //            }
-        //        }
-        //        Console.WriteLine($"semaphore count: {semaphore.CurrentCount}: wait semaphore");
-        //        await semaphore.WaitAsync(); // Acquire semaphore
-        //        try {
-        //            Console.WriteLine($"Thread {Thread.CurrentThread.ManagedThreadId}: attachment.Id = {attachment.Id} inside semaphore");
-        //            Console.WriteLine($"semaphore count: {semaphore.CurrentCount}: got semaphore");
-
-        //            var existingAttachment = dbContext.Attachments
-        //                .FirstOrDefault(a => a.Id == attachment.Id);
-
-        //            if (existingAttachment == null) {
-        //                var attachmentEntity = _mapper.Map<AttachmentEntity>(attachment);
-        //                dbContext.Attachments.Add(attachmentEntity);
-        //            }
-        //            dbContext.SaveChanges();
-        //            emailEntity.EmailAttachments.Add(new EmailAttachmentEntity {
-        //                EmailId = emailEntity.Id,
-        //                AttachmentId = attachment.Id
-        //            });
-        //        }
-        //        finally {
-        //            semaphore.Release(); // Release semaphore
-        //            Console.WriteLine($"semaphore count: {semaphore.CurrentCount}: Release semaphore");
-        //        }
-        //    }
-
-        //    // Handle inline resources
-        //    foreach (var inlineResource in email.InlineResources) {
-        //        object lockObject;
-        //        lock (_lock) {
-        //            if (!_inlineResourceLocks.TryGetValue(inlineResource.Id, out lockObject)) {
-        //                lockObject = new object();
-        //                _inlineResourceLocks[inlineResource.Id] = lockObject;
-        //            }
-        //        }
-
-        //        // Proper locking with object for each inline resource
-        //        lock (lockObject) {
-        //            var existingInlineResource = dbContext.InlineResources
-        //                .FirstOrDefault(a => a.Id == inlineResource.Id);
-
-        //            if (existingInlineResource == null) {
-        //                var inlineResourceEntity = _mapper.Map<InlineResourceEntity>(inlineResource);
-        //                dbContext.InlineResources.Add(inlineResourceEntity);
-        //            }
-        //            dbContext.SaveChanges();
-        //            emailEntity.EmailInlineResources.Add(new EmailInlineResourceEntity {
-        //                EmailId = emailEntity.Id,
-        //                InlineResourceId = inlineResource.Id
-        //            });
-        //        }
-        //    }
-
-        //    // Save the email entity
-        //    await dbContext.Emails.AddAsync(emailEntity);
-
-        //    if (emailEntity.Status != null) {
-        //        dbContext.Entry(emailEntity.Status).State = EntityState.Unchanged;
-        //    }
-
-        //    if (emailEntity.Requester != null) {
-        //        dbContext.Entry(emailEntity.Requester).State = EntityState.Unchanged;
-        //    }
-
-        //    await dbContext.SaveChangesAsync();
-        //    email.Id = emailEntity.Id; // Assuming the Id is generated after SaveChangesAsync
-
-        //    return email;
-        //}
-        //public async Task<Email> SaveEmailAsync(Email email) {
-        //    using var dbContext = _contextFactory.CreateDbContext();
-        //    if (email == null) {
-        //        throw new ArgumentNullException(nameof(email));
-        //    } else {
-        //        var emailEntity = _mapper.Map<EmailEntity>(email);
-        //        //mapping isue with attachment
-        //        if (emailEntity != null) {
-
-        //            // Check and save attachments
-        //            foreach (var attachment in email.Attachments) {
-        //                var existingAttachment = await dbContext.Attachments
-        //                    .FirstOrDefaultAsync(a => a.Id== attachment.Id);
-
-        //                //AttachmentEntity attachmentEntity;
-        //                if (existingAttachment == null) {
-        //                    var attachmentEntity = _mapper.Map<AttachmentEntity>(attachment);
-        //                    dbContext.Attachments.Add(attachmentEntity);
-        //                }
-        //                emailEntity.EmailAttachments.Add(new EmailAttachmentEntity {
-        //                    EmailId = emailEntity.Id,
-        //                    AttachmentId = attachment.Id
-        //                });
-        //            }
-        //            foreach (var inlineResource in email.InlineResources) {
-        //                var existingInlineResource = await dbContext.InlineResources
-        //                    .FirstOrDefaultAsync(a => a.Id == inlineResource.Id);
-
-        //                //AttachmentEntity attachmentEntity;
-        //                if (existingInlineResource == null) {
-        //                    var inlineResourceEntity = _mapper.Map<InlineResourceEntity>(inlineResource);
-        //                    dbContext.InlineResources.Add(inlineResourceEntity);
-        //                }
-        //                emailEntity.EmailInlineResources.Add(new EmailInlineResourceEntity {
-        //                    EmailId = emailEntity.Id,
-        //                    InlineResourceId = inlineResource.Id
-        //                });
-        //            }
-        //            await dbContext.Emails.AddAsync(emailEntity);
-        //            if (emailEntity.Status != null) {
-        //                dbContext.Entry(emailEntity.Status).State = EntityState.Unchanged;
-        //            }
-        //            if (emailEntity.Requester != null) {
-        //                dbContext.Entry(emailEntity.Requester).State = EntityState.Unchanged;
-        //            }
-        //            await dbContext.SaveChangesAsync();
-        //            email.Id = emailEntity.Id; // Assuming the Id is generated after SaveChangesAsync
-
-        //        }
-        //    }
-        //    return email;
-
-        //}
-
+       
         public async Task UpdateEmailStatusAsync(Email email, string? errorMessage) {
             using var dbContext = _contextFactory.CreateDbContext();
 
