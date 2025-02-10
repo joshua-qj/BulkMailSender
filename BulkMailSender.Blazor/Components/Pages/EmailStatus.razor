@@ -88,7 +88,7 @@
 
             await _hubConnection.StartAsync();
             // Register this client with the jobId for updates
-            await _hubConnection.SendAsync("RegisterJobConnection", jobId);
+            await _hubConnection.SendAsync("RegisterBatchConnection", jobId);
         }
     }
     public async ValueTask DisposeAsync()

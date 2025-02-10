@@ -18,7 +18,6 @@ namespace BulkMailSender.Blazor.Services {
             } else {
                 Console.WriteLine("No connection found for the batch job.");
             }
-
         }
     }
 }

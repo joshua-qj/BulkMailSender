@@ -4,13 +4,13 @@ using System.Collections.Concurrent;
 
 namespace BulkMailSender.Blazor.Hubs {
     public class EmailStatusHub : Hub {
-        public async Task JoinGroup(string groupId) {
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupId);
-        }
+        //public async Task JoinGroup(string groupId) {
+        //    await Groups.AddToGroupAsync(Context.ConnectionId, groupId);
+        //}
 
-        public async Task LeaveGroup(string groupId) {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupId);
-        }
+        //public async Task LeaveGroup(string groupId) {
+        //    await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupId);
+        //}
 
         private static readonly ConcurrentDictionary<Guid, string> JobConnections = new ConcurrentDictionary<Guid, string>();
 
@@ -27,9 +27,9 @@ namespace BulkMailSender.Blazor.Hubs {
             return base.OnDisconnectedAsync(exception);
         }
 
-        public Task RegisterJobConnection(Guid jobId) {
+        public Task RegisterBatchConnection(Guid batchId) {
             // Store the mapping of jobId to connectionId
-            JobConnections[jobId] = Context.ConnectionId;
+            JobConnections[batchId] = Context.ConnectionId;
             return Task.CompletedTask;
         }
 

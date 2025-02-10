@@ -92,10 +92,6 @@
                 {
                     startTime = statusUpdate.BatchStartTime;
                     sent += statusUpdate.Status == "Completed" ? 1 : 0;
-                    // Console.WriteLine($"Received update for email: {statusUpdate.EmailTo}");
-                    // Console.WriteLine($"Status: {statusUpdate.Status}");
-                    // Console.WriteLine($"Batch Start Time: {statusUpdate.BatchStartTime}");
-                    // Console.WriteLine($"Message: {statusUpdate.Message}");
                     if (!string.IsNullOrEmpty(statusUpdate.Message))
                     {
                         StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) , error: {statusUpdate.Message}";
@@ -104,25 +100,13 @@
                     {
                         StatusMessage = $"{statusUpdate.EmailTo}, ( {sent} / {Total} ) .";
                     }
-                    // if (statusUpdate.FailedEmails != null && statusUpdate.FailedEmails.Count > 0)
-                    // {
-                    //     foreach (var item in statusUpdate.FailedEmails)
-                    //     {
-                    //         failedEmails.Add(new EmailFailureRecord
-                    //             {
-                    //                 Email = item.Email,
-                    //                 ErrorMessage = item.ErrorMessage
-                    //             });
-
-                    //     }
-                    // }
                     failedEmails = statusUpdate.FailedEmails;
                     StateHasChanged();
                 });
             });
             await _hubConnection.StartAsync();
             // Register this client with the jobId for updates
-            await _hubConnection.SendAsync("RegisterJobConnection", BatchId);
+            await _hubConnection.SendAsync("RegisterBatchConnection", BatchId);
         }
     }
     public async ValueTask DisposeAsync()
